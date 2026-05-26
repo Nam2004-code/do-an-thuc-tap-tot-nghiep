@@ -1,0 +1,15 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<div style="margin-bottom:20px; padding:18px; border:1px solid #d9d9d9; border-radius:10px; background:#fff8e6;">
+  <h2 style="margin:0 0 8px; font-size:20px;">Báo cáo doanh thu</h2>
+  <p style="margin:0 0 12px; color:#555;">Mở bảng thống kê doanh thu theo tháng, top sản phẩm và size bán ra.</p>
+  <p style="margin:0;">
+    <a href="{% url 'admin:products_salesreport_revenue_report' %}" style="display:inline-block; padding:10px 14px; border-radius:8px; background:#111827; color:#fff; text-decoration:none;">
+      Xem báo cáo doanh thu
+    </a>
+  </p>
+</div>
+{{ block.super }}
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Trung tâm trợ giúp - Shoe Store{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="text-center mb-5">
+            <h1 class="fw-bold">Chúng tôi có thể giúp gì cho bạn?</h1>
+            <p class="text-muted">Tìm kiếm câu trả lời nhanh chóng hoặc liên hệ trực tiếp với đội ngũ hỗ trợ.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-8">
+                <h4 class="mb-4"><i class="fas fa-question-circle text-primary"></i> Câu hỏi thường gặp</h4>
+                <div class="accordion shadow-sm" id="accordionFAQ">
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                Chính sách đổi trả hàng như thế nào?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#accordionFAQ">
+                            <div class="accordion-body">
+                                Bạn có thể đổi trả sản phẩm trong vòng <strong>7 ngày</strong> kể từ khi nhận hàng nếu sản phẩm còn nguyên tem mác và chưa qua sử dụng. Phí vận chuyển đổi trả sẽ do khách hàng thanh toán trừ trường hợp lỗi từ nhà sản xuất. <a href="{% url 'return_policy' %}" class="text-decoration-none">Xem chi tiết Chính sách đổi trả.</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                Làm sao để chọn đúng size giày?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+                            <div class="accordion-body">
+                                Chúng tôi sử dụng bảng size chuẩn EU. Bạn có thể tham khảo bảng hướng dẫn đo chiều dài bàn chân trong phần chi tiết mỗi sản phẩm để chọn size chính xác nhất. Nếu phân vân giữa 2 size, chúng tôi khuyên bạn nên chọn size lớn hơn.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Thời gian giao hàng mất bao lâu?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+                            <div class="accordion-body">
+                                Nội thành Đà Nẵng: 24h. <br>
+                                Các tỉnh thành khác: từ 2 - 4 ngày làm việc tùy khu vực.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm bg-dark text-white p-3 mb-4">
+                    <h5 class="fw-bold mb-3">Liên hệ trực tiếp</h5>
+                    <div class="mb-3">
+                        <i class="fas fa-phone-alt me-2 text-warning"></i> 0368266780
+                    </div>
+                    <div class="mb-3">
+                        <i class="fas fa-envelope me-2 text-warning"></i> hotro@shoestore.vn
+                    </div>
+                    <div class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2 text-warning"></i> 87 Nguyễn Sơn, Hòa Cường Nan, Hải Châu, Đà Nẵng.
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm p-3">
+                    <h6 class="fw-bold">Giờ làm việc</h6>
+                    <p class="small text-muted mb-0">Thứ 2 - Chủ Nhật: 08:00 - 22:00</p>
+                    <hr>
+                    <h6 class="fw-bold">Mạng xã hội</h6>
+                    <div class="d-flex gap-3">
+                        <a href="https://www.facebook.com/le.tan.thong.364960" class="text-primary fs-4"><i class="fab fa-facebook"></i></a>
+                        <a href="https://www.instagram.com/binn.412/" class="text-danger fs-4"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-info fs-4"><i class="fab fa-zalo"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-5 border-0 shadow-sm p-4 bg-light">
+            <h4 class="text-center mb-4">Bạn vẫn còn thắc mắc? Gửi tin nhắn cho chúng tôi</h4>
+            <form action="#" method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <input type="text" class="form-control" placeholder="Họ và tên" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <input type="email" class="form-control" placeholder="Email liên hệ" required>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <textarea class="form-control" rows="4" placeholder="Nhập nội dung thắc mắc của bạn..."></textarea>
+                    </div>
+                    <div class="col-12 text-center">
+                        <button type="submit" class="btn btn-dark px-5">Gửi yêu cầu hỗ trợ</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Làm mượt hiệu ứng accordion */
+    .accordion-button:not(.collapsed) {
+        background-color: #f8f9fa;
+        color: #000;
+        box-shadow: none;
+    }
+    .accordion-button:focus {
+        border-color: rgba(0,0,0,0.125);
+        box-shadow: none;
+    }
+</style>
+{% endblock %}

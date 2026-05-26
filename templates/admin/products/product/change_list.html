@@ -1,0 +1,326 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  .sales-dashboard {
+    margin-top: 24px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .sales-dashboard h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+  }
+  .sales-dashboard .hint {
+    margin: 0 0 16px;
+    color: #666;
+  }
+  .sales-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .chart-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 14px;
+    background: #fafafa;
+  }
+  .chart-card h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+  }
+  .chart-card canvas {
+    max-height: 320px;
+  }
+  .detail-box {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+  }
+  .detail-box table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+  .detail-box th,
+  .detail-box td {
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    padding: 6px 4px;
+  }
+  @media (min-width: 1200px) {
+    .sales-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .chart-card.full {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+
+<div class="sales-dashboard">
+  <h2>Thống kê bán hàng theo tháng</h2>
+  <p class="hint">Bấm vào cột tháng để xem sản phẩm bán chạy. Bấm tiếp vào miền sản phẩm để xem số lượng và size bán ra trong tháng đó.</p>
+  <div id="chartLibWarning" class="detail-box" style="display:none; margin-bottom:12px; border-color:#f59e0b; background:#fffbeb;"></div>
+
+  {{ sales_chart_data|json_script:"sales-chart-data" }}
+
+  <div class="sales-grid">
+    <section class="chart-card full">
+      <h3>Biểu đồ cột: số đôi giày bán theo tháng</h3>
+      <canvas id="monthBarChart"></canvas>
+    </section>
+
+    <section class="chart-card">
+      <h3 id="productChartTitle">Biểu đồ miền: sản phẩm bán chạy trong tháng</h3>
+      <canvas id="productAreaChart"></canvas>
+    </section>
+
+    <section class="chart-card">
+      <h3 id="sizeChartTitle">Phân bố size theo sản phẩm đã chọn</h3>
+      <canvas id="sizeBarChart"></canvas>
+      <div id="salesDetail" class="detail-box">Chọn 1 miền sản phẩm để xem chi tiết.</div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const rawNode = document.getElementById('sales-chart-data');
+  if (!rawNode) {
+    return;
+  }
+
+  const payload = JSON.parse(rawNode.textContent || '{}');
+  const months = payload.months || [];
+  const monthProducts = payload.month_products || {};
+
+  const monthCtx = document.getElementById('monthBarChart');
+  const productCtx = document.getElementById('productAreaChart');
+  const sizeCtx = document.getElementById('sizeBarChart');
+  const productTitle = document.getElementById('productChartTitle');
+  const sizeTitle = document.getElementById('sizeChartTitle');
+  const detailBox = document.getElementById('salesDetail');
+
+  if (!monthCtx || !productCtx || !sizeCtx || !detailBox) {
+    return;
+  }
+
+  let monthChart = null;
+  let productChart = null;
+  let sizeChart = null;
+  let currentMonthKey = null;
+  let currentProductList = [];
+
+  function renderFallbackTable() {
+    if (!months.length) {
+      detailBox.innerHTML = '<strong>Chưa có dữ liệu bán hàng để thống kê.</strong>';
+      return;
+    }
+
+    const rows = months.map(function (m) {
+      return '<tr><td>' + m.label + '</td><td>' + m.quantity + ' đôi</td></tr>';
+    }).join('');
+
+    detailBox.innerHTML = [
+      '<strong>Thống kê dạng bảng (fallback)</strong>',
+      '<div style="margin-top:6px;">Không tải được thư viện biểu đồ, hệ thống hiển thị dữ liệu dạng bảng để bạn vẫn theo dõi được doanh số theo tháng.</div>',
+      '<table><thead><tr><th>Tháng</th><th>Số đôi đã bán</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    ].join('');
+  }
+
+  function buildMonthChart() {
+    if (monthChart) {
+      monthChart.destroy();
+    }
+
+    monthChart = new Chart(monthCtx, {
+      type: 'bar',
+      data: {
+        labels: months.map((m) => m.label),
+        datasets: [{
+          label: 'Số đôi đã bán',
+          data: months.map((m) => m.quantity),
+          borderWidth: 1,
+          backgroundColor: '#3b82f6',
+          borderColor: '#1d4ed8'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true }
+        },
+        onClick: function (evt, elements) {
+          if (!elements.length) {
+            return;
+          }
+          const idx = elements[0].index;
+          const month = months[idx];
+          if (!month) {
+            return;
+          }
+          currentMonthKey = month.key;
+          renderProductChart(month);
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+
+  function renderProductChart(month) {
+    const products = monthProducts[month.key] || [];
+    currentProductList = products;
+
+    if (productChart) {
+      productChart.destroy();
+    }
+
+    productTitle.textContent = 'Biểu đồ miền: sản phẩm bán chạy tháng ' + month.label;
+
+    productChart = new Chart(productCtx, {
+      type: 'line',
+      data: {
+        labels: products.map((p) => p.product_name),
+        datasets: [{
+          label: 'Số đôi đã bán',
+          data: products.map((p) => p.quantity),
+          fill: true,
+          tension: 0.35,
+          borderColor: '#0f766e',
+          backgroundColor: 'rgba(15, 118, 110, 0.25)',
+          pointBackgroundColor: '#134e4a',
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true }
+        },
+        onClick: function (evt, elements) {
+          if (!elements.length) {
+            return;
+          }
+          const idx = elements[0].index;
+          const product = currentProductList[idx];
+          if (!product) {
+            return;
+          }
+          renderProductDetail(month, product);
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+
+    if (products.length) {
+      renderProductDetail(month, products[0]);
+    } else {
+      renderEmptyDetail(month);
+    }
+  }
+
+  function renderEmptyDetail(month) {
+    if (sizeChart) {
+      sizeChart.destroy();
+      sizeChart = null;
+    }
+    sizeTitle.textContent = 'Phân bố size tháng ' + month.label;
+    detailBox.innerHTML = '<strong>Không có dữ liệu sản phẩm bán ra trong tháng này.</strong>';
+  }
+
+  function renderProductDetail(month, product) {
+    const sizeData = (product.sizes || []).slice().sort(function (a, b) {
+      if (a.size === b.size) {
+        return 0;
+      }
+      return a.size > b.size ? 1 : -1;
+    });
+
+    if (sizeChart) {
+      sizeChart.destroy();
+    }
+
+    sizeTitle.textContent = 'Phân bố size - ' + product.product_name + ' (' + month.label + ')';
+
+    sizeChart = new Chart(sizeCtx, {
+      type: 'bar',
+      data: {
+        labels: sizeData.map((s) => s.size),
+        datasets: [{
+          label: 'Số đôi theo size',
+          data: sizeData.map((s) => s.quantity),
+          borderWidth: 1,
+          backgroundColor: '#f59e0b',
+          borderColor: '#b45309'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+
+    const rows = sizeData.map(function (item) {
+      return '<tr><td>Size ' + item.size + '</td><td>' + item.quantity + ' đôi</td></tr>';
+    }).join('');
+
+    detailBox.innerHTML = [
+      '<div><strong>Tháng:</strong> ' + month.label + '</div>',
+      '<div><strong>Sản phẩm:</strong> ' + product.product_name + '</div>',
+      '<div><strong>Tổng số đã bán:</strong> ' + product.quantity + ' đôi</div>',
+      '<table><thead><tr><th>Size</th><th>Số lượng</th></tr></thead><tbody>' + (rows || '<tr><td colspan="2">Không có dữ liệu size.</td></tr>') + '</tbody></table>'
+    ].join('');
+  }
+
+  if (!months.length) {
+    detailBox.innerHTML = '<strong>Chưa có dữ liệu bán hàng hoàn tất để thống kê.</strong>';
+    return;
+  }
+
+  if (typeof Chart === 'undefined') {
+    const warning = document.getElementById('chartLibWarning');
+    if (warning) {
+      warning.style.display = 'block';
+      warning.innerHTML = '<strong>Không tải được Chart.js</strong><br>Vui lòng kiểm tra kết nối Internet hoặc chặn CDN trên trình duyệt.';
+    }
+    renderFallbackTable();
+    return;
+  }
+
+  buildMonthChart();
+  currentMonthKey = months[months.length - 1].key;
+  renderProductChart(months[months.length - 1]);
+})();
+</script>
+{% endblock %}

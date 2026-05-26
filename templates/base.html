@@ -1,0 +1,699 @@
+{% load static %} <!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Shoe Store{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        .alert-message { margin: 0; border-radius: 10px; border: none; animation: slideDown 0.3s ease-out; }
+        .alert-success { background-color: #d4edda; color: #155724; }
+        .alert-error, .alert-danger { background-color: #f8d7da; color: #721c24; }
+        .alert-warning { background-color: #fff3cd; color: #856404; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; }
+        .alert-message .alert-close { cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
+        .alert-message .alert-close:hover { opacity: 1; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .messages-container { position: fixed; top: 100px; right: 20px; max-width: 400px; z-index: 1050; }
+        @media (max-width: 768px) { .messages-container { top: 80px; right: 10px; left: 10px; max-width: none; } }
+
+        .navbar {
+            background: linear-gradient(135deg, #161a1d 0%, #212529 55%, #1b2024 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+        }
+
+        .navbar .container {
+            gap: 1rem;
+        }
+
+        .navbar-brand {
+            gap: 0.5rem;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+        }
+
+        .navbar-logo {
+            width: 38px;
+            height: 38px;
+        }
+
+        .navbar .nav-link {
+            color: rgba(255, 255, 255, 0.88);
+            border-radius: 999px;
+            white-space: nowrap;
+            font-size: 0.92rem;
+            font-weight: 600;
+            line-height: 1.1;
+            padding: 0.45rem 0.8rem;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .navbar .nav-link:hover,
+        .navbar .nav-link:focus {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .navbar .nav-link.text-uppercase {
+            letter-spacing: 0.28px;
+        }
+
+        .navbar-nav.me-auto,
+        .navbar-nav.ms-auto {
+            gap: 1rem !important;
+        }
+
+        .btn-sale-premium {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff3d57 100%) !important;
+            border: 0;
+            box-shadow: 0 10px 24px rgba(255, 61, 87, 0.28);
+        }
+
+        .btn-sale-premium:hover {
+            color: #fff !important;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(255, 61, 87, 0.34);
+        }
+
+        .btn-sale-premium .fw-bold {
+            letter-spacing: 0.5px;
+        }
+
+        .btn-sale-premium span {
+            white-space: nowrap;
+        }
+
+        .navbar form .input-group {
+            overflow: hidden;
+            border-radius: 999px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+        }
+
+        .navbar form {
+            max-width: 380px !important;
+        }
+
+        .navbar form .form-control {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background-color: rgba(255, 255, 255, 0.04) !important;
+            min-height: 46px;
+            font-size: 0.95rem;
+        }
+
+        .navbar form .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.55);
+        }
+
+        .navbar form .btn-warning {
+            min-height: 46px;
+            font-weight: 700;
+        }
+
+        .badge-cart {
+            min-width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            font-size: 0.72rem;
+            transform: translateY(-1px);
+        }
+
+        .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.14);
+        }
+
+        .navbar .dropdown-menu {
+            border-radius: 16px;
+            padding: 0.65rem;
+        }
+
+        .navbar .dropdown-item {
+            border-radius: 12px;
+        }
+
+        @media (max-width: 991.98px) {
+            .navbar .container {
+                align-items: flex-start;
+            }
+
+            .navbar-collapse {
+                padding-top: 0.75rem;
+            }
+
+            .navbar form {
+                max-width: none !important;
+                width: 100% !important;
+            }
+
+            .navbar .navbar-nav {
+                align-items: flex-start !important;
+            }
+        }
+        
+        /* Chỉnh CSS hình ảnh Chatbot mượt hơn */
+        .chat-img { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+        #chat-bubble {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #212529;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            cursor: pointer;
+            z-index: 1060;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #chat-bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.26);
+        }
+
+        #chat-widget {
+            position: fixed;
+            right: 20px;
+            bottom: 86px;
+            width: 360px;
+            max-width: calc(100vw - 32px);
+            height: 520px;
+            max-height: calc(100vh - 120px);
+            display: none;
+            flex-direction: column;
+            background: #fff;
+            border-radius: 18px;
+            overflow: hidden;
+            z-index: 1059;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #212529, #343a40);
+            color: #fff;
+            font-weight: 700;
+            flex: 0 0 auto;
+        }
+
+        .widget-header i.fa-times {
+            cursor: pointer;
+            opacity: 0.85;
+        }
+
+        .widget-body {
+            flex: 1 1 auto;
+            padding: 14px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .widget-footer {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 12px;
+            border-top: 1px solid #e9ecef;
+            background: #fff;
+            flex: 0 0 auto;
+        }
+
+        #widget-input {
+            flex: 1;
+            border: 1px solid #ced4da;
+            border-radius: 999px;
+            padding: 10px 14px;
+            outline: none;
+        }
+
+        .widget-footer button {
+            border: none;
+            background: #ffc107;
+            color: #000;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+        }
+
+        .msg-bubble {
+            max-width: 85%;
+            margin-bottom: 10px;
+            padding: 10px 14px;
+            border-radius: 16px;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .msg-user {
+            margin-left: auto;
+            background: #d1ecf1;
+            color: #0c5460;
+            border-bottom-right-radius: 6px;
+        }
+
+        .msg-bot {
+            background: #fff;
+            color: #212529;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 6px;
+        }
+
+        .options-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-size,
+        .btn-cancel {
+            border: none;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-size {
+            background: #212529;
+            color: #fff;
+        }
+
+        .btn-cancel {
+            background: #e9ecef;
+            color: #212529;
+        }
+
+        @media (max-width: 768px) {
+            #chat-bubble {
+                right: 14px;
+                bottom: 14px;
+            }
+
+            #chat-widget {
+                right: 14px;
+                left: 14px;
+                bottom: 78px;
+                width: auto;
+                height: 70vh;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light"> 
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+            <img src="{% static 'images/logo.svg' %}" alt="Logo" width="45" height="45" class="d-inline-block align-text-top me-2 navbar-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block'">
+            <span class="navbar-logo-text text-white" style="display:none">SHOE<span class="text-warning">STORE</span></span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"><span class="navbar-toggler-icon"></span></button>
+
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav me-auto align-items-center gap-1 mt-3 mt-lg-0">
+                <li class="nav-item"><a class="nav-link nav-link-custom text-white fw-semibold text-uppercase px-3" style="font-size: 0.9rem;" href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="nav-item"><a class="nav-link text-white fw-semibold px-3" href="{% url 'products:product_list' %}">Sản phẩm</a></li>
+                <li class="nav-item mx-lg-3 my-2 my-lg-0">
+                    <a class="nav-link btn-sale-premium bg-danger text-white rounded-pill px-4 py-2 d-flex align-items-center" href="{% url 'sale' %}">
+                        <i class="fas fa-fire text-warning me-2"></i> <span class="fw-bold text-uppercase" style="font-size: 0.85rem;">Khuyến Mãi</span>
+                    </a>
+                </li>
+            </ul>
+
+            <form class="mx-lg-4 my-3 my-lg-0" action="{% url 'products:search' %}" method="GET" style="width: 100%; max-width: 450px;">
+                <div class="input-group">
+                    <input class="form-control bg-dark border-secondary text-light placeholder-light" style="border-radius: 20px 0 0 20px;" type="search" name="q" placeholder="Tìm kiếm giày..." value="{{ query|default:'' }}" required>
+                    <button class="btn btn-warning border-0 px-3" style="border-radius: 0 20px 20px 0; box-shadow: none;" type="submit"><i class="fas fa-search"></i></button>
+                </div>
+            </form>
+
+            <ul class="navbar-nav ms-auto align-items-center gap-3">
+                <li class="nav-item">
+                    <a class="nav-link text-white fw-semibold px-2 position-relative" href="{% url 'cart:cart_detail' %}">
+                        <i class="fas fa-shopping-cart fs-5 me-1"></i> Giỏ hàng
+                        <span id="cart-count" class="badge rounded-pill bg-warning text-dark badge-cart">
+                            {% if request.session.cart %}{% if request.session.cart_count %}{{ request.session.cart_count }}{% else %}{{ request.session.cart|length }}{% endif %}{% else %}0{% endif %}
+                        </span>
+                    </a>
+                </li>
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle btn btn-outline-warning rounded-pill px-4 fw-bold text-white shadow-none" href="#" id="accountMenu" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i> Tài khoản
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" aria-labelledby="accountMenu">
+                            <li class="px-3 py-2 fw-bold text-dark border-bottom mb-2" style="font-size: 0.9rem;"><i class="fas fa-smile text-warning me-2"></i>Xin chào, {{ user.username }}</li>
+                            <li><a class="dropdown-item rounded-2 py-2" href="{% url 'profile' %}"><i class="fas fa-id-card me-2 text-primary"></i> Thông tin cá nhân</a></li>
+                            <li><a class="dropdown-item rounded-2 py-2" href="{% url 'products:order_history' %}"><i class="fas fa-history me-2 text-success"></i> Lịch sử đơn hàng</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item rounded-2 py-2 text-danger fw-bold" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i> Đăng xuất</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item"><a class="btn btn-outline-light rounded-pill px-4 fw-bold" href="{% url 'login' %}">Đăng nhập</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Messages container for alerts -->
+<div class="messages-container" id="messages-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-message alert-{{ message.tags }}" role="alert">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span>
+                        {% if message.tags == 'success' or message.tags == '' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                    </span>
+                    <span class="alert-close" onclick="this.parentElement.parentElement.style.display='none';">×</span>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<div class="container mt-4 min-vh-100"> 
+    {% block content %} {% endblock %}
+</div>
+
+<footer class="bg-dark text-light pt-5 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <h5 class="fw-bold">Shoe Store</h5>
+                <p class="small text-muted">Cửa hàng giày chính hãng, giao hàng toàn quốc.</p>
+                <p class="small mb-0">Hotline: <a href="tel:0123456789" class="text-warning">0368266780</a></p>
+                <p class="small">Địa chỉ: 87 Nguyễn Sơn, Hòa Cường Nam, tp. Đà Nẵng</p>
+            </div>
+            <div class="col-md-2 mb-4">
+                <h6 class="fw-bold">Danh mục</h6>
+                <ul class="list-unstyled small">
+                    <li><a class="text-light text-decoration-none" href="{% url 'products:product_list' %}">Sản phẩm</a></li>
+                    <li><a class="text-light text-decoration-none" href="{% url 'sale' %}">Khuyến mãi</a></li>
+                    <li><a class="text-light text-decoration-none" href="{% url 'help' %}">Trợ giúp</a></li>
+                </ul>
+            </div>
+            <div class="col-md-3 mb-4">
+                <h6 class="fw-bold">Hỗ trợ</h6>
+                <ul class="list-unstyled small">
+                    <li><a class="text-light text-decoration-none" href="{% url 'contact' %}">Liên hệ</a></li>
+                    <li><a class="text-light text-decoration-none" href="{% url 'return_policy' %}">Chính sách đổi trả</a></li>
+                    <li><a class="text-light text-decoration-none" href="{% url 'warranty_policy' %}">Chính sách bảo hành</a></li>
+                </ul>
+            </div>
+            <div class="col-md-3 mb-4">
+                <h6 class="fw-bold">Đăng ký nhận tin</h6>
+                <form id="footer-newsletter" class="d-flex mt-2">
+                    <input type="email" class="form-control form-control-sm me-2" placeholder="Email của bạn" aria-label="Email" required>
+                    <button class="btn btn-warning btn-sm" type="submit">Đăng ký</button>
+                </form>
+                <div class="mt-3">
+                    <a href="#" class="text-light me-2"><i class="fab fa-facebook fa-lg"></i></a>
+                    <a href="#" class="text-light me-2"><i class="fab fa-instagram fa-lg"></i></a>
+                    <a href="#" class="text-light"><i class="fab fa-youtube fa-lg"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row border-top pt-3">
+            <div class="col-md-8">
+                <p class="small text-muted mb-0">© 2026 Shoe Store. All rights reserved.</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="#" id="back-to-top" class="btn btn-outline-light btn-sm">Lên đầu trang</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Footer scripts: newsletter (no backend) and back-to-top -->
+<script>
+    document.getElementById('footer-newsletter').addEventListener('submit', function(e){
+        e.preventDefault();
+        // Simple UX feedback. Hook this to backend endpoint if available.
+        const btn = this.querySelector('button');
+        const old = btn.innerText;
+        btn.innerText = 'Đã đăng ký';
+        btn.disabled = true;
+        setTimeout(()=>{ btn.innerText = old; btn.disabled = false; }, 2000);
+    });
+
+    document.getElementById('back-to-top').addEventListener('click', function(e){
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<div id="chat-bubble" onclick="toggleWidget()"><i class="fas fa-comment-dots"></i></div>
+
+<div id="chat-widget">
+    <div class="widget-header">
+        <span><i class="fas fa-robot text-warning me-2"></i> Trợ lý Shoe Store</span>
+        <i class="fas fa-times" onclick="toggleWidget()"></i>
+    </div>
+    <div class="widget-body" id="widget-body">
+        <div class="msg-bubble msg-bot">Dạ Shoe Store xin chào! Bạn cần tìm mẫu giày nào hay tư vấn size cứ nhắn mình nhé 👟</div>
+    </div>
+    <div class="widget-footer">
+        <input type="text" id="widget-input" placeholder="Nhập tin nhắn..." onkeypress="handleWidgetEnter(event)">
+        <button onclick="sendWidgetMessage()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<script>
+    const widgetWindow = document.getElementById('chat-widget');
+    const widgetBody = document.getElementById('widget-body');
+    const widgetInput = document.getElementById('widget-input');
+
+    function toggleWidget() {
+        widgetWindow.style.display = (widgetWindow.style.display === 'none' || widgetWindow.style.display === '') ? 'flex' : 'none';
+        if(widgetWindow.style.display === 'flex') {
+            widgetBody.scrollTop = widgetBody.scrollHeight;
+        }
+    }
+
+    window.onload = function() {
+        fetch('/api/get_chat_history/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.history && data.history.length > 0) {
+                widgetBody.innerHTML = ''; 
+                data.history.forEach(item => {
+                    let className = item.is_bot ? 'msg-bot' : 'msg-user';
+                    
+                    // Ẩn đi các mã kỹ thuật nếu còn dính trong lịch sử
+                    let cleanedText = item.message.replace(/\[CHOOSE_SIZE:.*?\]/g, '').replace(/\[ASK_BOTH:.*?\]/g, '').replace(/\[ASK_SIZE:.*?\]/g, '').replace(/\[ASK_QTY:.*?\]/g, '').replace(/\[ADD_CART:.*?\]/g, '');
+                    
+                    // Render hình ảnh từ lịch sử chat
+                    cleanedText = cleanedText.replace(/\[SHOW_IMAGE:\s*([^\]]+)\]/g, '<br><img src="$1" class="chat-img"><br>');
+                    
+                    let formattedText = cleanedText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                    widgetBody.innerHTML += `<div class="msg-bubble ${className}">${formattedText}</div>`;
+                });
+                
+                // Timeout nhẹ để đảm bảo ảnh load xong mới cuộn xuống đáy
+                setTimeout(() => {
+                    widgetBody.scrollTop = widgetBody.scrollHeight;
+                }, 150);
+            }
+            
+            // Tự động mở lại hộp chat nếu đang reload từ giỏ hàng
+            if (sessionStorage.getItem('keep_chat_open') === 'true') {
+                sessionStorage.removeItem('keep_chat_open');
+                setTimeout(() => {
+                    if (widgetWindow.style.display !== 'flex') {
+                        toggleWidget();
+                    }
+                }, 300);
+            }
+        });
+    }
+
+    function handleWidgetEnter(e) { if (e.key === 'Enter') sendWidgetMessage(); }
+
+    function sendWidgetMessage() {
+        const text = widgetInput.value.trim();
+        if (!text) return;
+        widgetInput.value = '';
+        processChatApi(text, text);
+    }
+
+    // Xóa/Ẩn nút Size sau khi đã bấm để tránh bấm nhiều lần
+    function removeOptionsBox(btnElement) {
+        if(btnElement && btnElement.closest('.options-box')) {
+            btnElement.closest('.options-box').style.display = 'none';
+        }
+    }
+
+    // Khi bấm Chọn Size
+    function submitOrderWithQty(productId, size, btnElement) {
+        const qtyInput = document.getElementById(`qty-input-${productId}`);
+        const qty = qtyInput ? qtyInput.value : 1;
+        removeOptionsBox(btnElement);
+        const hiddenMessage = `Xác nhận đặt mua mã ${productId} size ${size} số lượng ${qty}`;
+        const displayMessage = `Mình chọn size ${size}, số lượng ${qty}`;
+        processChatApi(hiddenMessage, displayMessage);
+    }
+
+    // Khi bấm Hủy
+    function cancelOrder(btnElement) {
+        removeOptionsBox(btnElement);
+        widgetBody.innerHTML += `<div class="msg-bubble msg-user">Mình không thêm nữa.</div>`;
+        widgetBody.innerHTML += `<div class="msg-bubble msg-bot">Dạ vâng ạ, thao tác đã được hủy. Bạn cần xem mẫu nào khác cứ bảo mình nha! 🥰</div>`;
+        widgetBody.scrollTop = widgetBody.scrollHeight;
+    }
+
+    function processChatApi(apiText, displayText) {
+        widgetBody.innerHTML += `<div class="msg-bubble msg-user">${displayText}</div>`;
+        widgetBody.scrollTop = widgetBody.scrollHeight;
+
+        const typingId = "typing-" + Date.now();
+        widgetBody.innerHTML += `<div id="${typingId}" class="msg-bubble msg-bot"><i>Đang suy nghĩ...</i></div>`;
+        widgetBody.scrollTop = widgetBody.scrollHeight;
+
+        fetch('/api/get_response/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: apiText, display_message: displayText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById(typingId).remove(); 
+            if (data.response) {
+                let aiText = data.response;
+                let actionHtml = '';
+                // Mật lệnh xử lý UI giỏ hàng
+                const askBothRegex = /\[ASK_BOTH:\s*(\d+)\s*:\s*([^\]]+)\]/;
+                const askSizeRegex = /\[ASK_SIZE:\s*(\d+)\s*:\s*([^\]:]+)\s*:\s*(\d+)\]/;
+                const askQtyRegex = /\[ASK_QTY:\s*(\d+)\s*:\s*([^\]]+)\]/;
+
+                // Xử lý giỏ hàng tự động reload
+                if (data.added_to_cart && window.location.pathname.includes('/cart')) {
+                    sessionStorage.setItem('keep_chat_open', 'true');
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+                
+                if (aiText.match(askBothRegex)) {
+                    const match = aiText.match(askBothRegex);
+                    const productId = match[1];
+                    const sizes = match[2].split(',').map(s => s.trim());
+                    aiText = aiText.replace(askBothRegex, ''); 
+                    
+                    actionHtml += `
+                        <div class="options-box" style="flex-direction: column; align-items: flex-start;">
+                            <div style="font-weight:bold; font-size:0.9rem; margin-bottom: 8px;">Vui lòng chọn số lượng và size:</div>
+                            <div style="margin-bottom: 10px; display: flex; align-items: center;">
+                                <label style="font-size:0.85rem; margin-right: 8px;">Số lượng:</label>
+                                <input type="number" id="qty-input-${productId}" value="1" min="1" max="99" style="width: 60px; border-radius: 5px; border: 1px solid #ccc; padding: 2px 5px; text-align: center;">
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                    `;
+                    sizes.forEach(size => {
+                        actionHtml += `<button class="btn-size" onclick="submitOrderWithQty('${productId}', '${size}', this)" style="margin: 0;">Size ${size}</button>`;
+                    });
+                    actionHtml += `<button class="btn-cancel" onclick="cancelOrder(this)" style="margin: 0;">Hủy</button></div></div>`;
+                }
+                else if (aiText.match(askSizeRegex)) {
+                    const match = aiText.match(askSizeRegex);
+                    const productId = match[1];
+                    const sizes = match[2].split(',').map(s => s.trim());
+                    const preQty = match[3];
+                    aiText = aiText.replace(askSizeRegex, ''); 
+                    
+                    actionHtml += `
+                        <div class="options-box" style="flex-direction: column; align-items: flex-start;">
+                            <div style="font-weight:bold; font-size:0.9rem; margin-bottom: 8px;">Bạn chọn size nào cho ${preQty} sản phẩm ạ:</div>
+                            <input type="hidden" id="qty-input-${productId}" value="${preQty}">
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                    `;
+                    sizes.forEach(size => {
+                        actionHtml += `<button class="btn-size" onclick="submitOrderWithQty('${productId}', '${size}', this)" style="margin: 0;">Size ${size}</button>`;
+                    });
+                    actionHtml += `<button class="btn-cancel" onclick="cancelOrder(this)" style="margin: 0;">Hủy</button></div></div>`;
+                }
+                else if (aiText.match(askQtyRegex)) {
+                    const match = aiText.match(askQtyRegex);
+                    const productId = match[1];
+                    const size = match[2].trim();
+                    aiText = aiText.replace(askQtyRegex, ''); 
+                    
+                    actionHtml += `
+                        <div class="options-box" style="flex-direction: column; align-items: flex-start;">
+                            <div style="font-weight:bold; font-size:0.9rem; margin-bottom: 8px;">Số lượng size ${size} là bao nhiêu ạ:</div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" id="qty-input-${productId}" value="1" min="1" max="99" style="width: 60px; border-radius: 5px; border: 1px solid #ccc; padding: 2px 5px; text-align: center;">
+                                <button class="btn-size" onclick="submitOrderWithQty('${productId}', '${size}', this)" style="margin: 0; background: #ffc107; color: #000; border-color: #ffc107;"><i class="fas fa-check"></i> Chọn</button>
+                                <button class="btn-cancel" onclick="cancelOrder(this)" style="margin: 0;">Hủy</button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Mật lệnh 2: Render Hình Ảnh Sản phẩm
+                aiText = aiText.replace(/\[SHOW_IMAGE:\s*([^\]]+)\]/g, '<br><img src="$1" class="chat-img" onload="document.getElementById(\'widget-body\').scrollTop = document.getElementById(\'widget-body\').scrollHeight;"><br>');
+
+                let formattedText = aiText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                widgetBody.innerHTML += `<div class="msg-bubble msg-bot">${formattedText}${actionHtml}</div>`;
+                
+                // Cập nhật số lượng giỏ hàng trên Menu
+                if (data.cart_count !== undefined) {
+                    const cartBadge = document.getElementById('cart-count');
+                    if(cartBadge) {
+                        cartBadge.innerText = data.cart_count;
+                        cartBadge.style.transform = 'scale(1.5)';
+                        setTimeout(() => cartBadge.style.transform = 'scale(1)', 300);
+                    }
+                }
+                
+                // Cuộn xuống cuối sau khi thêm bubble
+                widgetBody.scrollTop = widgetBody.scrollHeight;
+            } else {
+                widgetBody.innerHTML += `<div class="msg-bubble msg-bot text-danger">⚠️ Lỗi: ${data.error}</div>`;
+            }
+            widgetBody.scrollTop = widgetBody.scrollHeight;
+        })
+        .catch(error => {
+            const typingEl = document.getElementById(typingId);
+            if (typingEl) typingEl.remove();
+            widgetBody.innerHTML += `<div class="msg-bubble msg-bot text-danger">⚠️ Lỗi mạng, vui lòng thử lại!</div>`;
+            widgetBody.scrollTop = widgetBody.scrollHeight;
+        });
+    }
+</script>
+<script src="{% static 'js/password-toggle.js' %}"></script>
+</body>
+</html>

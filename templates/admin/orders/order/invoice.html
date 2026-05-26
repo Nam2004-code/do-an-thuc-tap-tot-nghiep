@@ -1,0 +1,184 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+  .invoice-wrap {
+    margin: 24px;
+    padding: 24px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  }
+  .invoice-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .invoice-title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .invoice-subtitle {
+    margin: 6px 0 0;
+    color: #6b7280;
+  }
+  .invoice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .invoice-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    background: #fafafa;
+  }
+  .invoice-card h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+  }
+  .invoice-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  .invoice-table th,
+  .invoice-table td {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 8px;
+    text-align: left;
+    vertical-align: middle;
+  }
+  .invoice-table th {
+    background: #f9fafb;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+  }
+  .invoice-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 18px;
+  }
+  .invoice-total {
+    font-size: 22px;
+    font-weight: 700;
+    color: #dc2626;
+  }
+  .invoice-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  @media print {
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
+
+    body * {
+      visibility: hidden !important;
+    }
+
+    .invoice-wrap,
+    .invoice-wrap * {
+      visibility: visible !important;
+    }
+
+    .invoice-wrap {
+      position: absolute;
+      inset: 0;
+      margin: 0 !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      width: 100% !important;
+      padding: 24px !important;
+    }
+
+    .invoice-actions {
+      display: none !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="invoice-wrap">
+  <div class="invoice-head">
+    <div>
+      <h1 class="invoice-title">Hóa đơn đơn hàng #{{ order.id }}</h1>
+      <p class="invoice-subtitle">Trang xem hóa đơn dành cho quản trị viên</p>
+    </div>
+    <div class="invoice-actions">
+      <a href="{% url 'admin:orders_order_changelist' %}" class="button">Quay lại danh sách</a>
+      <button type="button" class="button default" onclick="window.print()">In hóa đơn</button>
+    </div>
+  </div>
+
+  <div class="invoice-grid">
+    <div class="invoice-card">
+      <h3>Thông tin khách hàng</h3>
+      <p><strong>Họ tên:</strong> {{ order.full_name }}</p>
+      <p><strong>Số điện thoại:</strong> {{ order.phone }}</p>
+      <p><strong>Địa chỉ:</strong> {{ order.address }}</p>
+      <p><strong>Thanh toán:</strong> {{ order.payment_method }}</p>
+      <p><strong>Trạng thái:</strong> {{ order.display_status }}</p>
+    </div>
+    <div class="invoice-card">
+      <h3>Thông tin đơn hàng</h3>
+      <p><strong>Ngày tạo:</strong> {{ order.created_at|date:"d/m/Y H:i:s" }}</p>
+      <p><strong>Mã đơn:</strong> #{{ order.id }}</p>
+      <p><strong>Tổng tiền:</strong> <span class="invoice-total">{{ order.total_price|intcomma }}đ</span></p>
+      {% if order.return_reason %}
+        <p><strong>Lý do đổi/trả:</strong> {{ order.return_reason }}</p>
+      {% endif %}
+      {% if order.return_response %}
+        <p><strong>Phản hồi shop:</strong> {{ order.return_response }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="invoice-card">
+    <h3>Danh sách sản phẩm</h3>
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>Size</th>
+          <th>Số lượng</th>
+          <th>Đơn giá</th>
+          <th>Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in order_items %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.size }}</td>
+          <td>x{{ item.quantity }}</td>
+          <td>{{ item.price|intcomma }}đ</td>
+          <td><strong>{{ item.get_cost|intcomma }}đ</strong></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center; padding: 24px; color: #6b7280;">Đơn hàng chưa có sản phẩm.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

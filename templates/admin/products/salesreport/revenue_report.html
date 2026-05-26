@@ -1,0 +1,459 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+<style>
+  .revenue-dashboard {
+    margin: 24px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+  }
+  .revenue-dashboard h1 {
+    margin: 0 0 8px;
+    font-size: 24px;
+  }
+  .revenue-dashboard .hint {
+    margin: 0 0 16px;
+    color: #666;
+  }
+  .revenue-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .chart-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 14px;
+    background: #fafafa;
+    min-height: 420px;
+  }
+  .chart-card.full {
+    min-height: 430px;
+  }
+  .chart-card h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+  }
+  .chart-card canvas {
+    display: block;
+    width: 100% !important;
+    height: 320px !important;
+  }
+  .detail-box {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+  }
+  .detail-box table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+  .detail-box th,
+  .detail-box td {
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    padding: 6px 4px;
+  }
+  .summary-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .summary-chip {
+    padding: 10px 12px;
+    border-radius: 999px;
+    background: #111827;
+    color: #fff;
+    font-size: 13px;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+  }
+  .summary-card {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  }
+  .summary-card .label { color: #6b7280; font-size: 13px; }
+  .summary-card .value { font-size: 22px; font-weight: 800; color: #111827; margin-top: 4px; }
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .report-table th,
+  .report-table td {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px 6px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .section-title {
+    margin: 18px 0 10px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  @media (min-width: 1200px) {
+    .revenue-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .chart-card.full {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 768px) {
+    .summary-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="revenue-dashboard">
+  <h1>Báo cáo doanh thu</h1>
+  <p class="hint">Bấm vào cột tháng để xem sản phẩm bán ra nhiều nhất. Bấm tiếp vào sản phẩm để xem số lượng và size đã bán.</p>
+  <div class="summary-row">
+    <a class="summary-chip" href="{% url 'admin:index' %}">Về trang quản trị</a>
+    <a class="summary-chip" href="{% url 'admin:products_salesreport_changelist' %}">Mở dạng danh sách báo cáo</a>
+  </div>
+  <div id="chartLibWarning" class="detail-box" style="display:none; margin-bottom:12px; border-color:#f59e0b; background:#fffbeb;"></div>
+
+  <div class="summary-grid">
+    <div class="summary-card"><div class="label">Tổng số hóa đơn</div><div class="value">{{ sales_chart_data.summary.total_orders|default:0 }}</div></div>
+    <div class="summary-card"><div class="label">Tổng số đôi đã bán</div><div class="value">{{ sales_chart_data.summary.total_pairs|default:0 }}</div></div>
+    <div class="summary-card"><div class="label">Tổng số dòng sản phẩm</div><div class="value">{{ sales_chart_data.summary.total_order_items|default:0 }}</div></div>
+    <div class="summary-card"><div class="label">Tổng doanh thu</div><div class="value">{{ sales_chart_data.summary.total_revenue|default:0|floatformat:0 }}đ</div></div>
+  </div>
+
+  <div class="detail-box">
+    <strong>Ghi chú chính xác dữ liệu</strong>
+    <div style="margin-top:6px; color:#4b5563;">Báo cáo này tính theo <b>OrderItem</b> của các đơn hàng đã hoàn tất, nên đây là số đôi thực tế đã bán ra theo size và sản phẩm.</div>
+  </div>
+
+  {{ sales_chart_data|json_script:"sales-chart-data" }}
+
+  <div class="revenue-grid">
+    <section class="chart-card full">
+      <h2>Số lượng bán ra theo tháng</h2>
+      <canvas id="monthBarChart"></canvas>
+    </section>
+
+    <section class="chart-card">
+      <h2 id="productChartTitle">Biểu đồ tròn: sản phẩm bán ra trong tháng</h2>
+      <canvas id="productAreaChart"></canvas>
+    </section>
+
+    <section class="chart-card">
+      <h2 id="sizeChartTitle">Phân bố size theo sản phẩm đã chọn</h2>
+      <canvas id="sizeBarChart"></canvas>
+      <div id="salesDetail" class="detail-box">Chọn 1 sản phẩm để xem chi tiết.</div>
+    </section>
+  </div>
+
+  <div class="chart-card full" style="margin-top:18px;">
+    <h2>Danh sách sản phẩm đã bán theo size</h2>
+    <div class="detail-box">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Sản phẩm</th>
+            <th>Size</th>
+            <th>Số đôi</th>
+            <th>Doanh thu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in sales_chart_data.product_sizes %}
+            <tr>
+              <td>{{ row.product_name }}</td>
+              <td>Size {{ row.size }}</td>
+              <td>{{ row.quantity }}</td>
+              <td>{{ row.revenue|floatformat:0 }}đ</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4">Chưa có dữ liệu size đã bán.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="chart-card full" style="margin-top:18px;">
+    <h2>Chi tiết giao dịch gần nhất</h2>
+    <div class="detail-box">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Đơn</th>
+            <th>Sản phẩm</th>
+            <th>Size</th>
+            <th>Số đôi</th>
+            <th>Doanh thu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in sales_chart_data.recent_items %}
+            <tr>
+              <td>{{ row.created_at }}</td>
+              <td>#{{ row.order_id }}</td>
+              <td>{{ row.product_name }}</td>
+              <td>Size {{ row.size }}</td>
+              <td>{{ row.quantity }}</td>
+              <td>{{ row.revenue|floatformat:0 }}đ</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6">Chưa có dữ liệu giao dịch.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const rawNode = document.getElementById('sales-chart-data');
+  if (!rawNode) {
+    return;
+  }
+
+  const payload = JSON.parse(rawNode.textContent || '{}');
+  const months = payload.months || [];
+  const monthProducts = payload.month_products || {};
+
+  const monthCtx = document.getElementById('monthBarChart');
+  const productCtx = document.getElementById('productAreaChart');
+  const sizeCtx = document.getElementById('sizeBarChart');
+  const productTitle = document.getElementById('productChartTitle');
+  const sizeTitle = document.getElementById('sizeChartTitle');
+  const detailBox = document.getElementById('salesDetail');
+
+  if (!monthCtx || !productCtx || !sizeCtx || !detailBox) {
+    return;
+  }
+
+  let monthChart = null;
+  let productChart = null;
+  let sizeChart = null;
+  let currentProductList = [];
+
+  function renderFallbackTable() {
+    if (!months.length) {
+      detailBox.innerHTML = '<strong>Chưa có dữ liệu bán hàng để thống kê doanh thu.</strong>';
+      return;
+    }
+
+    const rows = months.map(function (m) {
+      return '<tr><td>' + m.label + '</td><td>' + Number(m.quantity || 0).toLocaleString('vi-VN') + ' đôi</td></tr>';
+    }).join('');
+
+    detailBox.innerHTML = [
+      '<strong>Thống kê dạng bảng (fallback)</strong>',
+      '<div style="margin-top:6px;">Không tải được thư viện biểu đồ, hệ thống hiển thị dữ liệu dạng bảng.</div>',
+      '<table><thead><tr><th>Tháng</th><th>Số lượng</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    ].join('');
+  }
+
+  function buildMonthChart() {
+    if (monthChart) {
+      monthChart.destroy();
+    }
+
+    monthChart = new Chart(monthCtx, {
+      type: 'bar',
+      data: {
+        labels: months.map((m) => m.label),
+        datasets: [{
+          label: 'Số lượng',
+          data: months.map((m) => m.quantity),
+          borderWidth: 1,
+          backgroundColor: '#3b82f6',
+          borderColor: '#1d4ed8'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true }
+        },
+        onClick: function (evt, elements) {
+          if (!elements.length) {
+            return;
+          }
+          const idx = elements[0].index;
+          const month = months[idx];
+          if (!month) {
+            return;
+          }
+          renderProductChart(month);
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function (value) {
+                return Number(value).toLocaleString('vi-VN');
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderProductChart(month) {
+    const products = monthProducts[month.key] || [];
+    currentProductList = products;
+
+    if (productChart) {
+      productChart.destroy();
+    }
+
+    productTitle.textContent = 'Biểu đồ tròn: sản phẩm bán ra tháng ' + month.label;
+
+    const pieColors = products.map(function (_, index) {
+      const palette = [
+        '#2563eb', '#0f766e', '#f59e0b', '#dc2626', '#8b5cf6', '#16a34a',
+        '#db2777', '#0891b2', '#ea580c', '#4f46e5', '#65a30d', '#e11d48'
+      ];
+      return palette[index % palette.length];
+    });
+
+    productChart = new Chart(productCtx, {
+      type: 'pie',
+      data: {
+        labels: products.map((p) => p.product_name),
+        datasets: [{
+          label: 'Số lượng',
+          data: products.map((p) => p.quantity),
+          backgroundColor: pieColors,
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true }
+        },
+        onClick: function (evt, elements) {
+          if (!elements.length) {
+            return;
+          }
+          const idx = elements[0].index;
+          const product = currentProductList[idx];
+          if (!product) {
+            return;
+          }
+          renderProductDetail(month, product);
+        },
+        layout: {
+          padding: 8
+        }
+      }
+    });
+
+    if (products.length) {
+      renderProductDetail(month, products[0]);
+    } else {
+      renderEmptyDetail(month);
+    }
+  }
+
+  function renderEmptyDetail(month) {
+    if (sizeChart) {
+      sizeChart.destroy();
+      sizeChart = null;
+    }
+    sizeTitle.textContent = 'Phân bố size tháng ' + month.label;
+    detailBox.innerHTML = '<strong>Không có dữ liệu sản phẩm bán ra trong tháng này.</strong>';
+  }
+
+  function renderProductDetail(month, product) {
+    const sizeData = (product.sizes || []).slice().sort(function (a, b) {
+      const left = Number(a.size);
+      const right = Number(b.size);
+      if (!Number.isNaN(left) && !Number.isNaN(right)) {
+        return left - right;
+      }
+      return String(a.size).localeCompare(String(b.size), 'vi');
+    });
+
+    if (sizeChart) {
+      sizeChart.destroy();
+    }
+
+    sizeTitle.textContent = 'Phân bố size - ' + product.product_name + ' (' + month.label + ')';
+
+    sizeChart = new Chart(sizeCtx, {
+      type: 'bar',
+      data: {
+        labels: sizeData.map((s) => s.size),
+        datasets: [{
+          label: 'Số đôi theo size',
+          data: sizeData.map((s) => s.quantity),
+          borderWidth: 1,
+          backgroundColor: '#f59e0b',
+          borderColor: '#b45309'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+
+    const rows = sizeData.map(function (item) {
+      return '<tr><td>Size ' + item.size + '</td><td>' + item.quantity + ' đôi</td></tr>';
+    }).join('');
+
+    detailBox.innerHTML = [
+      '<div><strong>Tháng:</strong> ' + month.label + '</div>',
+      '<div><strong>Sản phẩm:</strong> ' + product.product_name + '</div>',
+      '<div><strong>Số lượng đã bán:</strong> ' + product.quantity + ' đôi</div>',
+      '<div><strong>Doanh thu:</strong> ' + Number(product.revenue || 0).toLocaleString('vi-VN') + 'đ</div>',
+      '<table><thead><tr><th>Size</th><th>Số lượng</th></tr></thead><tbody>' + (rows || '<tr><td colspan="2">Không có dữ liệu size.</td></tr>') + '</tbody></table>'
+    ].join('');
+  }
+
+  if (!months.length) {
+    detailBox.innerHTML = '<strong>Chưa có dữ liệu bán hàng để thống kê doanh thu.</strong>';
+    return;
+  }
+
+  if (typeof Chart === 'undefined') {
+    const warning = document.getElementById('chartLibWarning');
+    if (warning) {
+      warning.style.display = 'block';
+      warning.innerHTML = '<strong>Không tải được Chart.js</strong><br>Vui lòng kiểm tra kết nối Internet hoặc chặn CDN trên trình duyệt.';
+    }
+    renderFallbackTable();
+    return;
+  }
+
+  buildMonthChart();
+  renderProductChart(months[months.length - 1]);
+})();
+</script>
+{% endblock %}

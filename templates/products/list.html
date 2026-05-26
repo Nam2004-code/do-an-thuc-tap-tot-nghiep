@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load humanize %} 
+
+{% block content %}
+<div class="container-fluid mt-4 min-vh-100">
+    <form method="GET" action="{% url 'products:product_list' %}" id="filter-form">
+        <input type="hidden" name="page" id="page-input" value="{{ page_obj.number|default:1 }}">
+
+        <div class="row">
+            <div class="col-md-9 order-2 order-md-1">
+                <div class="row">
+                    {% for shoe in products %}
+                    <div class="col-md-4 col-sm-6 mb-4">
+                        <a href="{% url 'products:product_detail' shoe.id %}" class="text-decoration-none text-dark d-block h-100">
+                            <div class="card h-100 shadow-sm border-0 list-product-card overflow-hidden">
+                                
+                                <div class="overflow-hidden position-relative">
+                                    <img src="{{ shoe.image.url }}" class="card-img-top object-fit-cover" alt="{{ shoe.name }}" style="height: 280px;">
+                                </div>
+                                
+                                <div class="card-body text-center d-flex flex-column p-3">
+                                    {% if shoe.brand %}
+                                        <p class="text-muted small mb-1 text-uppercase" style="letter-spacing: 1px;">{{ shoe.brand.name }}</p>
+                                    {% endif %}
+                                    <h5 class="card-title h6 fw-bold mb-2 product-title" style="height: 40px; overflow: hidden;">{{ shoe.name }}</h5>
+                                    
+                                    <div class="d-flex justify-content-center align-items-center mb-3">
+                                        <span class="text-danger fw-bold fs-5">{{ shoe.price|intcomma }}₫</span>
+                                        {% if shoe.old_price and shoe.old_price > shoe.price %}
+                                            <del class="text-muted small ms-2">{{ shoe.old_price|intcomma }}₫</del>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-2 mt-auto">
+                                        <div class="d-flex justify-content-center flex-wrap gap-1">
+                                            {% for s in shoe.sizes.all %}
+                                                <span class="badge border text-dark fw-normal" style="font-size: 0.65rem; background-color: #f8f9fa;">{{ s.value }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-box-open fa-3x text-secondary mb-3"></i>
+                        <h5 class="fw-bold">Thành thật xin lỗi!</h5>
+                        <p class="text-muted fs-6">Hiện giờ không có sản phẩm bạn cần tìm.</p>
+                        <a href="{% url 'products:product_list' %}" class="btn btn-dark rounded-pill px-4 mt-2">Bỏ lọc & Xem tất cả</a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if page_obj.has_other_pages %}
+                <div class="row mt-4 mb-5">
+                    <div class="col-12 d-flex justify-content-center">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm shadow-sm">
+                                
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <button type="button" class="page-link text-dark" onclick="goToPage({{ page_obj.previous_page_number }})">
+                                            &laquo; Trở lại
+                                        </button>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">&laquo; Trở lại</span></li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link bg-dark border-dark text-white">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <button type="button" class="page-link text-dark" onclick="goToPage({{ num }})">{{ num }}</button>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <button type="button" class="page-link text-dark" onclick="goToPage({{ page_obj.next_page_number }})">
+                                            Tiếp &raquo;
+                                        </button>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">Tiếp &raquo;</span></li>
+                                {% endif %}
+
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                {% endif %}
+                </div>
+
+            <div class="col-md-3 order-1 order-md-2 mb-4">
+                <div class="card shadow-sm border-0 sticky-top filter-sidebar" style="top: 80px; z-index: 1000;">
+                    <div class="card-header bg-dark text-white py-3">
+                        <i class="fas fa-filter me-2"></i> BỘ LỌC TÌM KIẾM
+                    </div>
+                    
+                    <div class="card-body p-3">
+                        <h6 class="fw-bold small mb-3 text-uppercase">Thương hiệu</h6>
+                        {% for brand in brands %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input filter-checkbox" type="checkbox" name="brand" value="{{ brand.id }}" id="brand{{ brand.id }}">
+                            <label class="form-check-label small" for="brand{{ brand.id }}">{{ brand.name }}</label>
+                        </div>
+                        {% endfor %}
+
+                        <hr>
+
+                        <h6 class="fw-bold small mb-3 text-uppercase">Loại giày</h6>
+                        {% for cat in categories %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input filter-checkbox" type="checkbox" name="category" value="{{ cat.id }}" id="cat{{ cat.id }}">
+                            <label class="form-check-label small" for="cat{{ cat.id }}">{{ cat.name }}</label>
+                        </div>
+                        {% endfor %}
+
+                        <hr>
+
+                        <h6 class="fw-bold small mb-3 text-uppercase">Kích thước (Size)</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for size in all_sizes %}
+                            <div class="size-filter-item">
+                                <input type="checkbox" name="size" value="{{ size.id }}" id="size{{ size.id }}" class="btn-check filter-checkbox">
+                                <label class="btn btn-outline-dark btn-sm p-1 px-2" style="font-size: 0.7rem;" for="size{{ size.id }}">{{ size.value }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* === BỘ HIỆU ỨNG HOVER === */
+    .list-product-card { 
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+        border-radius: 12px;
+    }
+    
+    .list-product-card:hover { 
+        transform: translateY(-8px); 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.12) !important; 
+    }
+    
+    .list-product-card img { 
+        transition: transform 0.6s ease; 
+    }
+    
+    .list-product-card:hover img { 
+        transform: scale(1.08); 
+    }
+    
+    .list-product-card .product-title { 
+        transition: color 0.3s ease; 
+    }
+    
+    .list-product-card:hover .product-title { 
+        color: #dc3545; /* Đổi màu tên sang đỏ khi hover */
+    }
+
+    .object-fit-cover { object-fit: cover; }
+    
+    /* Hiệu ứng khi chọn size trong bộ lọc */
+    .btn-check:checked + .btn-outline-dark {
+        background-color: #212529;
+        color: white;
+        border-color: #212529;
+    }
+
+    /* ĐÃ THÊM: CSS cho nút phân trang */
+    .page-item .page-link {
+        border-radius: 4px;
+        margin: 0 3px;
+        border: 1px solid #dee2e6;
+        cursor: pointer;
+    }
+    .page-item.active .page-link {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const params = new URLSearchParams(window.location.search);
+        
+        // Giữ nguyên các ô check khi F5 hoặc chuyển trang
+        document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+            const paramName = checkbox.name;   
+            const paramValue = checkbox.value; 
+            
+            if (params.getAll(paramName).includes(paramValue)) {
+                checkbox.checked = true;
+            }
+        });
+
+        const filterForm = document.getElementById('filter-form');
+        
+        // Tự động submit khi thay đổi filter
+        document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                document.getElementById('page-input').value = 1;
+                filterForm.submit();
+            });
+        });
+    });
+
+    // ĐÃ THÊM: Hàm xử lý click nút phân trang (1, 2, Tiếp, Trở lại)
+    function goToPage(pageNumber) {
+        document.getElementById('page-input').value = pageNumber;
+        const form = document.getElementById('filter-form');
+        form.dataset.isPaginating = 'true'; // Đánh dấu là đang chuyển trang
+        form.submit(); // Submit toàn bộ form (bao gồm cả lọc và trang)
+    }
+</script>
+{% endblock %}

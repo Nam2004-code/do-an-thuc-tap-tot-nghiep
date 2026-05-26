@@ -1,0 +1,94 @@
+{% extends 'base.html' %}  
+
+{% block content %}
+<style>
+    /* Nền của phần nội dung (chỉ áp dụng cho vùng dưới menu) */
+    .login-section {
+        background-color: #f4f5f7; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh; /* Chiều cao tối thiểu để đẩy form ra giữa màn hình */
+        padding: 40px 0;
+    }
+
+    .login-card {
+        background-color: #ffffff;
+        width: 100%;
+        max-width: 420px;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+    }
+
+    .login-header { text-align: center; margin-bottom: 30px; }
+    .login-header h2 { color: #1a1a1a; font-size: 28px; font-weight: 800; margin: 0 0 10px 0; text-transform: uppercase; }
+    .login-header p { color: #777; font-size: 14px; margin: 0; }
+    
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+    .input-group input { width: 100%; padding: 14px 15px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 15px; box-sizing: border-box; transition: all 0.3s ease; }
+    .input-group input:focus { outline: none; border-color: #ffc107; box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2); }
+    
+    .form-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; font-size: 14px; }
+    .remember-me { display: flex; align-items: center; color: #555; }
+    .remember-me input { margin-right: 8px; }
+    .forgot-password { color: #e74c3c; text-decoration: none; font-weight: 600; }
+    .forgot-password:hover { text-decoration: underline; }
+    
+    .btn-login { width: 100%; padding: 16px; background-color: #ffc107; color: #1a1a1a; border: none; border-radius: 50px; font-size: 16px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: 0.3s; }
+    .btn-login:hover { background-color: #e0a800; }
+    
+    .register-redirect { text-align: center; margin-top: 25px; font-size: 14px; color: #555; }
+    .register-redirect a { color: #1a1a1a; font-weight: bold; text-decoration: none; margin-left: 5px; }
+    .register-redirect a:hover { color: #ffc107; }
+</style>
+
+<div class="login-section">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>ĐĂNG NHẬP</h2>
+            <p>Chào mừng bạn quay lại với Shoestore!</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center; 
+                    {% if message.tags == 'error' %} background-color: #ffcccc; color: #cc0000; 
+                    {% else %} background-color: #d4edda; color: #155724; {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form action="" method="POST">
+            {% csrf_token %}  
+            
+            <div class="input-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" name="username" placeholder="Nhập tài khoản của bạn" required>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" required>
+            </div>
+
+            <div class="form-actions">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Ghi nhớ tôi</label>
+                </div>
+                <a href="{% url 'forgot_password' %}" class="forgot-password">Quên mật khẩu?</a>
+            </div>
+
+            <button type="submit" class="btn-login">ĐĂNG NHẬP</button>
+        </form>
+
+        <div class="register-redirect">
+            Bạn chưa có tài khoản? <a href="{% url 'register' %}">Đăng ký ngay</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

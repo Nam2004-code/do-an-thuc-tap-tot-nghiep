@@ -1,0 +1,84 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tìm các ô nhập liệu
+        const oldPriceInput = document.getElementById('id_old_price');
+        const priceInput = document.getElementById('id_price');
+        const percentInput = document.getElementById('id_discount_percent');
+
+        if (!oldPriceInput || !priceInput || !percentInput) return;
+
+        // Tạo nút Toggle (Gạt)
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'button'; 
+        toggleBtn.style.cssText = 'margin-top: 10px; background-color: #417690; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none;';
+        toggleBtn.innerText = '🔄 ĐỔI SANG: NHẬP THEO %';
+
+        // Chèn nút vào ngay dưới ô %
+        percentInput.parentNode.appendChild(document.createElement('br'));
+        percentInput.parentNode.appendChild(toggleBtn);
+
+        let mode = 'price'; // Trạng thái mặc định
+
+        // Hàm tự động tính toán
+        function calculate() {
+            const oldPrice = parseFloat(oldPriceInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const percent = parseFloat(percentInput.value) || 0;
+
+            if (oldPrice <= 0) return;
+
+            if (mode === 'price') {
+                if (price > 0 && price < oldPrice) {
+                    percentInput.value = Math.round(((oldPrice - price) / oldPrice) * 100);
+                } else {
+                    percentInput.value = '';
+                }
+            } else if (mode === 'percent') {
+                if (percent > 0 && percent <= 100) {
+                    priceInput.value = Math.round(oldPrice - (oldPrice * percent / 100));
+                } else {
+                    priceInput.value = oldPrice;
+                }
+            }
+        }
+
+        // Bắt sự kiện khi bạn gõ phím
+        oldPriceInput.addEventListener('keyup', calculate);
+        priceInput.addEventListener('keyup', calculate);
+        percentInput.addEventListener('keyup', calculate);
+
+        // Bắt sự kiện khi bấm nút Đổi
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (mode === 'price') {
+                mode = 'percent';
+                toggleBtn.innerText = '🔄 ĐỔI SANG: NHẬP GIÁ TIỀN';
+                toggleBtn.style.backgroundColor = '#b24b4b'; // Đổi màu đỏ cho dễ phân biệt
+                
+                priceInput.setAttribute('readonly', 'readonly');
+                priceInput.style.backgroundColor = '#f0f0f0';
+                
+                percentInput.removeAttribute('readonly');
+                percentInput.style.backgroundColor = '#ffffff';
+                percentInput.focus();
+            } else {
+                mode = 'price';
+                toggleBtn.innerText = '🔄 ĐỔI SANG: NHẬP THEO %';
+                toggleBtn.style.backgroundColor = '#417690';
+                
+                percentInput.setAttribute('readonly', 'readonly');
+                percentInput.style.backgroundColor = '#f0f0f0';
+                
+                priceInput.removeAttribute('readonly');
+                priceInput.style.backgroundColor = '#ffffff';
+                priceInput.focus();
+            }
+        });
+    });
+</script>
+{% endblock %}

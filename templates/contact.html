@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Liên hệ - Shoe Store{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-uppercase">Liên hệ với chúng tôi</h2>
+            <p class="text-muted">Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn một cách tốt nhất.</p>
+        </div>
+
+        <div class="col-md-5 mb-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                <div class="card-body p-4 bg-dark text-white">
+                    <h4 class="fw-bold mb-4 text-warning">Thông tin liên hệ</h4>
+                    
+                    <div class="d-flex mb-4 align-items-start">
+                        <i class="fas fa-map-marker-alt fs-4 text-warning me-3 mt-1"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Địa chỉ cửa hàng</h6>
+                            <p class="mb-0 text-light opacity-75">87 Nguyễn Sơn, phường Hòa Cường Nam, quận Hải Châu, TP. Đà Nẵng.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-4 align-items-start">
+                        <i class="fas fa-phone-alt fs-4 text-warning me-3 mt-1"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Hotline tư vấn</h6>
+                            <p class="mb-0 text-light opacity-75"><a href="tel:0368266780" class="text-light text-decoration-none">0368 266 780</a></p>
+                            <small class="opacity-50">(Từ 08:00 - 22:00 mỗi ngày)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-4 align-items-start">
+                        <i class="fas fa-envelope fs-4 text-warning me-3 mt-1"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Email hỗ trợ</h6>
+                            <p class="mb-0 text-light opacity-75"><a href="mailto:hotro@shoestore.vn" class="text-light text-decoration-none">hotro@shoestore.vn</a></p>
+                        </div>
+                    </div>
+
+                    <hr class="border-secondary my-4">
+                    
+                    <h6 class="fw-bold mb-3 text-warning">Kết nối với chúng tôi</h6>
+                    <div class="d-flex gap-3">
+                        <a href="https://www.facebook.com/le.tan.thong.364960" class="btn btn-outline-light btn-sm rounded-circle" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/binn.412/" class="btn btn-outline-light btn-sm rounded-circle" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7 mb-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <h4 class="fw-bold mb-4">Gửi tin nhắn cho chúng tôi</h4>
+                    <form action="#" method="POST" id="contactForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg bg-light border-0" placeholder="Nhập họ và tên" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small">Số điện thoại <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control form-control-lg bg-light border-0" placeholder="Nhập số điện thoại" required>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-semibold small">Email</label>
+                                <input type="email" class="form-control form-control-lg bg-light border-0" placeholder="Nhập địa chỉ email">
+                            </div>
+                            <div class="col-12 mb-4">
+                                <label class="form-label fw-semibold small">Nội dung tin nhắn <span class="text-danger">*</span></label>
+                                <textarea class="form-control form-control-lg bg-light border-0" rows="5" placeholder="Nhập nội dung bạn cần hỗ trợ..." required></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-warning btn-lg fw-bold px-5 w-100 rounded-pill">GỬI YÊU CẦU</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bản đồ Google Map -->
+        <div class="col-12 mt-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3834.331289196395!2d108.219808115362!3d16.048316388894132!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x314219c6e3d23f6b%3A0xc68d5f35d2146f66!2zODcgTmd1eeG7hW4gU8ahbiwgSMOyYSBDxrDhu51uZyBOYW0sIEjhuqNpIENow6J1LCDEkMOgIE7hurVuZw!5e0!3m2!1svi!2s!4v1716381002341!5m2!1svi!2s" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = this.querySelector('button[type="submit"]');
+        const oldText = btn.innerText;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Đang gửi...';
+        btn.disabled = true;
+        
+        // Mô phỏng việc gửi tin nhắn
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-check-circle me-2"></i> Gửi thành công';
+            btn.classList.replace('btn-warning', 'btn-success');
+            btn.classList.add('text-white');
+            this.reset();
+            
+            setTimeout(() => {
+                btn.innerText = oldText;
+                btn.classList.replace('btn-success', 'btn-warning');
+                btn.classList.remove('text-white');
+                btn.disabled = false;
+            }, 3000);
+        }, 1500);
+    });
+</script>
+{% endblock %}

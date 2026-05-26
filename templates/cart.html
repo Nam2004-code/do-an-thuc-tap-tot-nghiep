@@ -1,0 +1,339 @@
+    {% extends "base.html" %}
+    {% load humanize %}
+
+    {% block content %}
+    <div class="container mt-5 mb-5" style="min-height: 70vh;">
+        <h3 class="fw-bold mb-4"><i class="fas fa-shopping-basket text-danger"></i> Giỏ hàng của bạn</h3>
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-3">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="py-3 ps-4" style="width: 50px;">
+                                        <input type="checkbox" id="check-all" class="form-check-input" checked>
+                                    </th>
+                                    <th class="py-3" style="width: 40%;">Sản phẩm</th>
+                                    <th class="py-3 text-center">Số lượng</th>
+                                    <th class="py-3 text-center">Số tiền</th>
+                                    <th class="py-3 text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr class="border-bottom item-row" data-item-key="{{ item.item_key }}">
+                                    <td class="ps-4">
+                                        <input type="checkbox" class="form-check-input item-checkbox" 
+                                            data-price="{{ item.product.price }}" 
+                                            data-key="{{ item.item_key }}"
+                                            value="{{ item.item_key }}" checked>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-3 border overflow-hidden" style="width: 70px; height: 70px;">
+                                                <img src="{{ item.product.image.url }}" class="w-100 h-100" style="object-fit: cover;">
+                                            </div>
+                                            <div class="ms-3">
+                                                <div class="fw-bold text-dark mb-1 small">{{ item.product.name }}</div>
+                                                <div class="badge bg-light text-muted fw-normal border" style="font-size: 11px;">Size: {{ item.size }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="input-group input-group-sm mx-auto" style="width: 105px;">
+                                            <button class="btn btn-outline-secondary btn-update-cart" type="button" data-item-key="{{ item.item_key }}" data-action="decrease">-</button>
+                                            <span class="form-control text-center fw-bold qty-value" data-item-key="{{ item.item_key }}">{{ item.quantity }}</span>
+                                            <button class="btn btn-outline-secondary btn-update-cart" type="button" data-item-key="{{ item.item_key }}" data-action="increase">+</button>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-bold text-danger">
+                                        <span class="item-total-value" data-item-key="{{ item.item_key }}">{{ item.total_price|intcomma }}</span>₫
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-light text-danger rounded-circle shadow-sm btn-remove-cart"
+                                                data-item-key="{{ item.item_key }}"
+                                                title="Xóa khỏi giỏ hàng">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <p class="text-muted">Giỏ hàng của bạn đang trống.</p>
+                                        <a href="{% url 'home' %}" class="btn btn-danger px-4">Mua sắm ngay</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <a href="{% url 'home' %}" class="btn btn-link text-dark text-decoration-none mt-3">
+                    <i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm
+                </a>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-3 p-4">
+                    <h5 class="fw-bold mb-4">Chi tiết thanh toán</h5>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted small">Đã chọn:</span>
+                        <span class="fw-bold" id="selected-count">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted small">Tạm tính:</span>
+                        <span class="fw-bold fs-5 text-danger"><span id="cart-total">0</span>₫</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+                        <span class="fw-bold">Tổng thanh toán:</span>
+                        <span class="fw-bold fs-3 text-danger"><span id="final-total">0</span>₫</span>
+                    </div>
+                    <button id="checkout-btn" class="btn btn-danger btn-lg w-100 fw-bold py-3 text-uppercase shadow-sm">
+                        MUA HÀNG (<span id="btn-count">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    {% if recommended_products %}
+    <div class="mt-5 pt-5 border-top">
+        <h4 class="fw-bold mb-4"><i class="fas fa-heart text-danger"></i> Có thể bạn cũng thích</h4>
+        <div class="row row-cols-2 row-cols-md-4 g-4">
+            {% for rp in recommended_products %}
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden rec-card" style="transition: transform 0.2s;">
+                    <a href="{% url 'products:product_detail' rp.id %}" class="text-decoration-none h-100 d-flex flex-column">
+                        <div style="height: 180px; overflow: hidden; background: #fff;">
+                            <img src="{{ rp.image.url }}" class="w-100 h-100" style="object-fit: contain; transition: 0.3s;">
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="text-dark fw-bold text-truncate mb-1 small">{{ rp.name }}</h6>
+                            <p class="text-danger fw-bold mb-3">{{ rp.price|intcomma }}₫</p>
+                            
+                            <div class="mt-auto">
+                                <span class="btn btn-sm btn-outline-dark w-100 fw-bold rounded-pill">
+                                    XEM CHI TIẾT
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <style>
+        /* Hiệu ứng khi di chuột vào card */
+        .rec-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+        .rec-card:hover img {
+            transform: scale(1.05);
+        }
+    </style>
+    {% endif %}
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN').format(amount);
+        }
+
+        function cleanPrice(priceString) {
+            return parseFloat(priceString.toString().replace(/\./g, '').replace(/,/g, '')) || 0;
+        }
+
+        function findRowByKey(itemKey) {
+            return $('.item-row').filter(function() {
+                return $(this).data('itemKey') === itemKey;
+            }).first();
+        }
+
+        function findQtyByKey(itemKey) {
+            return $('.qty-value').filter(function() {
+                return $(this).data('itemKey') === itemKey;
+            }).first();
+        }
+
+        function findItemTotalByKey(itemKey) {
+            return $('.item-total-value').filter(function() {
+                return $(this).data('itemKey') === itemKey;
+            }).first();
+        }
+
+        function calculateSelectedTotal() {
+            let total = 0;
+            let count = 0;
+            
+            $('.item-checkbox:checked').each(function() {
+                let key = $(this).data('key');
+                let itemTotalPriceText = findItemTotalByKey(key).text();
+                total += cleanPrice(itemTotalPriceText);
+                count++;
+            });
+
+            $('#cart-total, #final-total').text(formatMoney(total));
+            $('#selected-count, #btn-count').text(count);
+            $('#checkout-btn').prop('disabled', count === 0);
+        }
+
+        $(document).ready(function() {
+            calculateSelectedTotal();
+
+            $('#check-all').change(function() {
+                $('.item-checkbox').prop('checked', $(this).prop('checked'));
+                calculateSelectedTotal();
+            });
+
+            $(document).on('change', '.item-checkbox', function() {
+                if ($('.item-checkbox:checked').length === $('.item-checkbox').length) {
+                    $('#check-all').prop('checked', true);
+                } else {
+                    $('#check-all').prop('checked', false);
+                }
+                calculateSelectedTotal();
+            });
+
+            $(document).on('click', '.btn-update-cart', function() {
+                const itemKey = $(this).data('itemKey');
+                const action = $(this).data('action');
+                updateCart(itemKey, action);
+            });
+
+            $(document).on('click', '.btn-remove-cart', function() {
+                const itemKey = $(this).data('itemKey');
+                removeFromCart(itemKey);
+            });
+        });
+
+        function updateCart(itemKey, action) {
+            $.ajax({
+                url: `/cart/update/?item_key=${encodeURIComponent(itemKey)}&action=${encodeURIComponent(action)}`,
+                method: 'GET',
+                success: function(data) {
+                    if (data.success) {
+                        $('.cart-count').text(data.cart_count);
+                        if (data.item_count > 0) {
+                            findQtyByKey(itemKey).text(data.item_count);
+                            findItemTotalByKey(itemKey).text(data.item_total);
+                        } else {
+                            findRowByKey(itemKey).remove();
+                            if ($('.item-row').length === 0) location.reload();
+                        }
+                        calculateSelectedTotal();
+                        showMessage('Cập nhật giỏ hàng thành công', 'success');
+                    } else {
+                        showMessage(data.error || 'Có lỗi xảy ra', 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        showMessage(xhr.responseJSON.error, 'danger');
+                    } else {
+                        showMessage('Có lỗi xảy ra khi cập nhật giỏ hàng', 'danger');
+                    }
+                }
+            });
+        }
+
+        function removeFromCart(itemKey) {
+            $.ajax({
+                url: `/cart/remove/?item_key=${encodeURIComponent(itemKey)}`,
+                method: 'GET',
+                success: function(data) {
+                    if (data.success) {
+                        $('.cart-count').text(data.cart_count);
+                        findRowByKey(itemKey).fadeOut(400, function() {
+                            $(this).remove();
+                            if ($('.item-row').length === 0) {
+                                location.reload(); 
+                            }
+                            calculateSelectedTotal();
+                        });
+                        showMessage(data.message || 'Xóa sản phẩm thành công', 'success');
+                    } else {
+                        showMessage(data.error || 'Có lỗi xảy ra', 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        showMessage(xhr.responseJSON.error, 'danger');
+                    } else {
+                        showMessage('Có lỗi xảy ra khi xóa sản phẩm', 'danger');
+                    }
+                }
+            });
+        }
+
+        function showMessage(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-message alert-${type}`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <span>
+                        ${type === 'success' ? '<i class="fas fa-check-circle me-2"></i>' : '<i class="fas fa-exclamation-circle me-2"></i>'}
+                        ${message}
+                    </span>
+                    <span class="alert-close" onclick="this.parentElement.parentElement.style.display='none';">×</span>
+                </div>
+            `;
+            const container = document.getElementById('messages-container');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        $('#checkout-btn').click(function() {
+            let selectedKeys = [];
+            $('.item-checkbox:checked').each(function() {
+                selectedKeys.push($(this).val());
+            });
+
+            if (selectedKeys.length > 0) {
+                let queryString = selectedKeys.join(',');
+                window.location.href = `/cart/checkout/?items=${queryString}`; 
+            }
+        });
+    </script>
+
+    <style>
+        body { background-color: #f8f9fa; }
+        .table thead th { font-size: 0.8rem; text-transform: uppercase; color: #6c757d; border-top: none; }
+        .item-row:last-child { border-bottom: none !important; }
+        .form-check-input:checked { background-color: #dc3545; border-color: #dc3545; }
+        #checkout-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+        .table td:nth-child(4) { 
+            min-width: 120px; 
+            text-align: right !important; 
+            padding-right: 20px;
+        }
+        .price-display, [id^="item-total-"], #cart-total, #final-total {
+            display: inline-block;
+            white-space: nowrap; 
+            letter-spacing: -1px; 
+            font-variant-numeric: tabular-nums; 
+        }
+        .input-group { flex-wrap: nowrap !important; }
+        .btn-light.text-danger:hover {
+            background-color: #dc3545 !important;
+            color: white !important;
+        }
+        /* Style mới cho các thẻ gợi ý */
+        .rec-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+            transition: 0.3s ease-in-out;
+        }
+    </style>
+    {% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<style>
+    /* Bê nguyên CSS xịn xò từ trang login sang, chỉ tinh chỉnh lại form cho vừa */
+    .auth-section {
+        background-color: #f4f5f7; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh; 
+        padding: 40px 0;
+    }
+
+    .auth-card {
+        background-color: #ffffff;
+        width: 100%;
+        max-width: 450px; /* Cho form đăng ký rộng hơn một chút xíu */
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+    }
+
+    .auth-header { text-align: center; margin-bottom: 30px; }
+    .auth-header h2 { color: #1a1a1a; font-size: 28px; font-weight: 800; margin: 0 0 10px 0; text-transform: uppercase; }
+    .auth-header p { color: #777; font-size: 14px; margin: 0; }
+    
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+    .input-group input { width: 100%; padding: 14px 15px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 15px; box-sizing: border-box; transition: all 0.3s ease; }
+    .input-group input:focus { outline: none; border-color: #ffc107; box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2); }
+    
+    .btn-auth { width: 100%; padding: 16px; background-color: #ffc107; color: #1a1a1a; border: none; border-radius: 50px; font-size: 16px; font-weight: 800; text-transform: uppercase; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+    .btn-auth:hover { background-color: #e0a800; }
+    
+    .auth-redirect { text-align: center; margin-top: 25px; font-size: 14px; color: #555; }
+    .auth-redirect a { color: #1a1a1a; font-weight: bold; text-decoration: none; margin-left: 5px; }
+    .auth-redirect a:hover { color: #ffc107; }
+</style>
+
+<div class="auth-section">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>ĐĂNG KÝ</h2>
+            <p>Tạo tài khoản mới để nhận nhiều ưu đãi!</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center; 
+                    {% if message.tags == 'error' %} background-color: #ffcccc; color: #cc0000; 
+                    {% else %} background-color: #d4edda; color: #155724; {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form action="" method="POST">
+            {% csrf_token %}  
+            
+            <div class="input-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" name="username" placeholder="Tạo tên đăng nhập (VD: nguyenvan_a)" required>
+            </div>
+
+            <div class="input-group">
+                <label for="email">Địa chỉ Email</label>
+                <input type="email" id="email" name="email" placeholder="Nhập email của bạn" required>
+            </div>
+
+            <div class="input-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" placeholder="Tạo mật khẩu" required>
+            </div>
+
+            <div class="input-group">
+                <label for="confirm_password">Xác nhận mật khẩu</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Nhập lại mật khẩu" required>
+            </div>
+
+            <button type="submit" class="btn-auth">TẠO TÀI KHOẢN</button>
+        </form>
+
+        <div class="auth-redirect">
+            Bạn đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập ngay</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

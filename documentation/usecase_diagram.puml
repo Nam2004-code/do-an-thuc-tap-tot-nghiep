@@ -1,0 +1,106 @@
+@startuml TMDTShoes_Store_UseCase
+skinparam backgroundColor transparent
+skinparam usecase {
+    BackgroundColor #f1f8ff
+    BorderColor #0056b3
+    FontName "Segoe UI"
+    FontSize 13
+}
+skinparam actor {
+    BackgroundColor #e7f3ff
+    BorderColor #0056b3
+}
+
+
+title Sơ đồ Use Case Hệ thống Cửa hàng Giày TMDTShoes_Store
+
+left to right direction
+
+actor "Khách vãng lai" as Guest
+actor "Khách hàng" as Customer
+actor "Quản trị viên" as Admin
+actor "AI Bot" as AIBot <<System>>
+
+rectangle "Hệ thống TMDTShoes_Store" {
+    
+    ' --- Nhóm 1: Hệ thống Tài khoản ---
+    package "Quản lý Tài khoản" {
+        usecase "Đăng ký tài khoản" as UC_Register
+        usecase "Đăng nhập" as UC_Login
+        usecase "Xem/Sửa hồ sơ cá nhân" as UC_Profile
+        usecase "Đổi mật khẩu" as UC_ChangePass
+        usecase "Quên mật khẩu (OTP)" as UC_ResetPass
+    }
+
+    ' --- Nhóm 2: Mua hàng & Tìm kiếm ---
+    package "Mua sắm & Giỏ hàng" {
+        usecase "Xem danh sách giày" as UC_ViewList
+        usecase "Lọc tự động (Hãng/Loại)" as UC_AutoFilter
+        usecase "Tìm kiếm sản phẩm" as UC_Search
+        usecase "Xem chi tiết giày & Size" as UC_ViewDetail
+        usecase "Quản lý giỏ hàng" as UC_ManageCart
+        usecase "Đặt hàng & Thanh toán" as UC_Checkout
+        usecase "Đánh giá sản phẩm (Review)" as UC_Review
+        usecase "Yêu cầu đổi/trả (7 ngày)" as UC_Return
+    }
+
+    ' --- Nhóm 3: Thông minh nhân tạo AI ---
+    package "Trợ lý AI (Llama 3)" {
+        usecase "Tư vấn sản phẩm qua Chat" as UC_AIChat
+        usecase "Yêu cầu AI thêm vào giỏ" as UC_AIAddToCart
+        usecase "Xem lịch sử chat" as UC_ChatHistory
+    }
+
+    ' --- Nhóm 4: Quản trị Quản trị viên ---
+    package "Quản trị Hệ thống" {
+        usecase "Quản lý Sản phẩm (CRUD)" as UC_AdminProduct
+        usecase "Quản lý Đơn hàng" as UC_AdminOrder
+        usecase "Quản lý Danh mục/Hãng" as UC_AdminCategory
+        usecase "Quản lý Khuyến mãi (Flash Sale)" as UC_AdminSale
+        usecase "Cấu hình chính sách cửa hàng" as UC_AdminPolicy
+        usecase "Xử lý đổi/trả hàng" as UC_AdminReturn
+    }
+}
+
+' --- Quan hệ giữa các Actor và Use Case ---
+
+' Guest
+Guest --> UC_ViewList
+Guest --> UC_AutoFilter
+Guest --> UC_Search
+Guest --> UC_ViewDetail
+Guest --> UC_Register
+Guest --> UC_Login
+Guest --> UC_AIChat
+
+' Customer (Kế thừa từ Guest + thêm đặc quyền)
+Customer --|> Guest
+Customer --> UC_Profile
+Customer --> UC_ChangePass
+Customer --> UC_ResetPass
+Customer --> UC_ManageCart
+Customer --> UC_Checkout
+Customer --> UC_Review
+Customer --> UC_Return
+Customer --> UC_AIAddToCart
+Customer --> UC_ChatHistory
+
+' Admin
+Admin --> UC_AdminProduct
+Admin --> UC_AdminOrder
+Admin --> UC_AdminCategory
+Admin --> UC_AdminSale
+Admin --> UC_AdminPolicy
+Admin --> UC_AdminReturn
+Admin --> UC_Login
+
+' AI Bot System
+AIBot ..> UC_AIChat : Trả lời
+AIBot ..> UC_AIAddToCart : Thực thi mật lệnh
+
+' Các ghi chú logic (Include/Extend)
+UC_Checkout ..> UC_Login : <<requires>>
+UC_Profile ..> UC_AdminOrder : <<include hồ sơ từ đơn cũ>>
+UC_AIAddToCart ..> UC_ManageCart : <<include>>
+
+@enduml

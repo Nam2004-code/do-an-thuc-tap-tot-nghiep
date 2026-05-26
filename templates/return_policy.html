@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Chính sách đổi trả - Shoe Store{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-5">
+                    <h2 class="fw-bold mb-4 text-center">CHÍNH SÁCH ĐỔI TRẢ 7 NGÀY</h2>
+                    <p class="text-muted text-center mb-5">Mang lại sự yên tâm tuyệt đối cho khách hàng khi mua sắm tại Shoe Store.</p>
+
+                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-check-circle me-2"></i>1. Điều kiện áp dụng</h5>
+                    <ul class="mb-4">
+                        <li>Sản phẩm được đổi trả trong vòng <strong>7 ngày</strong> kể từ ngày nhận hàng.</li>
+                        <li>Sản phẩm phải còn nguyên vẹn, chưa qua sử dụng, chưa giặt ủi, còn nguyên tem mác và phụ kiện đi kèm (nếu có).</li>
+                        <li>Hộp giày phải còn nguyên vẹn, không bị móp méo hay dán băng keo trực tiếp lên hộp.</li>
+                        <li>Có đầy đủ hóa đơn mua hàng hoặc thông tin đơn hàng trên hệ thống.</li>
+                    </ul>
+
+                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-times-circle me-2"></i>2. Các trường hợp không được đổi trả</h5>
+                    <ul class="mb-4">
+                        <li>Quá thời hạn 7 ngày kể từ ngày nhận hàng.</li>
+                        <li>Sản phẩm đã qua sử dụng, bị bẩn, trầy xước, có mùi lạ hoặc bị biến dạng.</li>
+                        <li>Sản phẩm thuộc chương trình khuyến mãi đặc biệt (Final Sale, Flash Sale, Clearance) sẽ không được hỗ trợ đổi trả trừ khi có lỗi từ nhà sản xuất.</li>
+                        <li>Sản phẩm bị lỗi do người sử dụng không tuân thủ hướng dẫn bảo quản.</li>
+                    </ul>
+
+                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-exchange-alt me-2"></i>3. Quy trình thực hiện đổi trả</h5>
+                    <p>Khách hàng có thể thực hiện yêu cầu đổi trả ngay trên website hoặc liên hệ trực tiếp:</p>
+                    <ol class="mb-4">
+                        <li><strong>Cách 1 (Trực tuyến):</strong> Đăng nhập vào tài khoản, truy cập <a href="{% url 'products:return_eligible_orders' %}" class="text-decoration-none text-warning fw-bold">Danh sách đơn hàng đủ điều kiện đổi trả</a>, chọn sản phẩm và gửi yêu cầu.</li>
+                        <li><strong>Cách 2 (Trực tiếp):</strong> Mang sản phẩm cùng hóa đơn đến trực tiếp cửa hàng của Shoe Store tại địa chỉ: 87 Nguyễn Sơn, Hòa Cường Nam, TP. Đà Nẵng.</li>
+                        <li><strong>Cách 3 (Gửi qua bưu điện/đơn vị vận chuyển):</strong> Đóng gói sản phẩm cẩn thận (bọc hộp carton bên ngoài hộp giày) và gửi về địa chỉ cửa hàng. Ghi rõ "Yêu cầu đổi/trả hàng" kèm thông tin đơn hàng bên ngoài bưu kiện.</li>
+                    </ol>
+
+                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-money-bill-wave me-2"></i>4. Chi phí đổi trả</h5>
+                    <ul class="mb-4">
+                        <li><strong>Miễn phí 100%:</strong> Nếu sản phẩm bị lỗi từ nhà sản xuất, giao sai mẫu mã, hoặc sai size so với đơn đặt hàng.</li>
+                        <li><strong>Khách hàng chịu phí vận chuyển:</strong> Trong trường hợp khách hàng muốn đổi size (do không vừa), đổi sang mẫu khác theo nhu cầu cá nhân, hoặc trả hàng không có lỗi.</li>
+                    </ul>
+
+                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-undo me-2"></i>5. Chính sách hoàn tiền</h5>
+                    <p class="mb-4">
+                        Trong trường hợp trả hàng hoàn tiền, hệ thống sẽ xử lý hoàn tiền trong vòng <strong>3-5 ngày làm việc</strong> kể từ khi chúng tôi nhận được và kiểm tra sản phẩm hoàn trả đạt yêu cầu.
+                        Tiền sẽ được hoàn lại vào tài khoản ngân hàng hoặc ví điện tử mà khách hàng cung cấp.
+                    </p>
+
+                    <div class="alert alert-warning mt-5 rounded-3 border-0">
+                        <i class="fas fa-headset me-2"></i>Nếu bạn có bất kỳ thắc mắc nào về quy trình đổi trả, vui lòng gọi số Hotline <strong class="text-danger">0368266780</strong> hoặc sử dụng công cụ Chatbot hỗ trợ 24/7 để được giải đáp.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

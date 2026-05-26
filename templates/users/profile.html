@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thông tin cá nhân - Shoe Store{% endblock %}
+
+{% block content %}
+<style>
+    .profile-section {
+        background-color: #f4f5f7;
+        border-radius: 15px;
+        padding: 40px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    .profile-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        height: 100%;
+        border: 1px solid #eaeaea;
+    }
+    .profile-title {
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #333;
+        margin-bottom: 25px;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #ffc107;
+        display: inline-block;
+        padding-bottom: 5px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #555;
+        font-size: 0.9rem;
+    }
+    .form-control-custom {
+        background-color: #fafafa;
+        border: 1px solid #ddd;
+        color: #333;
+        border-radius: 8px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    .form-control-custom:focus {
+        background-color: #fff;
+        border-color: #ffc107;
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+        color: #000;
+    }
+    .form-control-custom:disabled {
+        background-color: #e9ecef;
+        color: #6c757d;
+        border-color: #ddd;
+    }
+    .btn-save {
+        background: linear-gradient(45deg, #ffc107, #ff9800);
+        color: #fff;
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
+    }
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(255, 193, 7, 0.4);
+    }
+    .section-icon {
+        color: #ffc107;
+        margin-right: 10px;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="profile-section mx-auto" style="max-width: 1000px;">
+        <h2 class="text-center mb-5 profile-title" style="border:none; border-bottom: 3px solid #ffc107;">HỒ SƠ CỦA TÔI</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="row g-4">
+            <!-- Cập nhật thông tin cá nhân -->
+            <div class="col-lg-6">
+                <div class="profile-card">
+                    <h5 class="fw-bold mb-4" style="color: #333;"><i class="fas fa-user-circle section-icon"></i> THÔNG TIN CHUNG</h5>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="update_profile" value="1">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Tên đăng nhập</label>
+                            <input type="text" class="form-control form-control-custom" value="{{ user.username }}" disabled>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Họ và Tên lót</label>
+                                <input type="text" name="last_name" class="form-control form-control-custom" value="{{ user.last_name }}" placeholder="Ví dụ: Nguyễn Văn" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Tên</label>
+                                <input type="text" name="first_name" class="form-control form-control-custom" value="{{ user.first_name }}" placeholder="Ví dụ: A" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control form-control-custom" value="{{ user.email }}" placeholder="Ví dụ: email@domain.com" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="text" name="phone" class="form-control form-control-custom" value="{{ request.user.userprofile.phone|default:'' }}" placeholder="Nhập số điện thoại...">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Địa chỉ giao hàng mặc định</label>
+                            <textarea name="address" class="form-control form-control-custom" rows="3" placeholder="Nhập địa chỉ của bạn...">{{ request.user.userprofile.address|default:'' }}</textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-save w-100">
+                            <i class="fas fa-save me-2"></i> Lưu Thông Tin
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Đổi mật khẩu -->
+            <div class="col-lg-6">
+                <div class="profile-card">
+                    <h5 class="fw-bold mb-4" style="color: #333;"><i class="fas fa-shield-alt section-icon"></i> ĐỔI MẬT KHẨU</h5>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="change_password" value="1">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu hiện tại</label>
+                            <input type="password" name="old_password" class="form-control form-control-custom" placeholder="Nhập mật khẩu cũ..." required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Mật khẩu mới</label>
+                            <input type="password" name="new_password" class="form-control form-control-custom" placeholder="Nhập mật khẩu mới..." required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Xác nhận mật khẩu mới</label>
+                            <input type="password" name="confirm_password" class="form-control form-control-custom" placeholder="Nhập lại mật khẩu mới..." required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-save w-100">
+                            <i class="fas fa-key me-2"></i> Cập Nhật Mật Khẩu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

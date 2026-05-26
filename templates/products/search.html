@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load humanize %} 
+{% block title %}Tìm kiếm: {{ query }} - Shoe Store{% endblock %}
+
+{% block content %}
+<div class="container py-5 min-vh-100">
+    <div class="border-bottom pb-3 mb-4">
+        <h3 class="fw-bold mb-1">
+            <i class="fas fa-search text-danger"></i> Kết quả tìm kiếm cho: <span class="text-danger">"{{ query }}"</span>
+        </h3>
+        <span class="text-muted">Tìm thấy <strong>{{ results|length }}</strong> sản phẩm</span>
+    </div>
+
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4 mb-5">
+        {% for shoe in results %}
+        <div class="col">
+            <a href="{% url 'products:product_detail' shoe.id %}" class="text-decoration-none text-dark d-block h-100">
+                <div class="card h-100 shadow-sm border-0 list-product-card overflow-hidden">
+                    <div class="overflow-hidden position-relative">
+                        {% if shoe.is_on_sale %}
+                            <span class="position-absolute top-0 start-0 badge bg-danger m-2 z-1">-{{ shoe.get_sale_percent }}%</span>
+                        {% endif %}
+                        <img src="{{ shoe.image.url }}" class="card-img-top object-fit-cover" alt="{{ shoe.name }}" style="height: 250px;">
+                    </div>
+                    <div class="card-body text-center d-flex flex-column p-3">
+                        {% if shoe.brand %}
+                            <p class="text-muted small mb-1 text-uppercase" style="letter-spacing: 1px;">{{ shoe.brand.name }}</p>
+                        {% endif %}
+                        <h6 class="card-title fw-bold mb-2 product-title text-truncate">{{ shoe.name }}</h6>
+
+                        <div class="mt-auto">
+                            {% if shoe.is_on_sale %}
+                                <span class="text-danger fw-bold">{{ shoe.price|intcomma }}₫</span>
+                                <del class="text-muted small ms-1">{{ shoe.old_price|intcomma }}₫</del>
+                            {% else %}
+                                <span class="text-dark fw-bold">{{ shoe.price|intcomma }}₫</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 w-100">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h4 class="fw-bold mt-2">Thành thật xin lỗi!</h4>
+            <p class="text-muted">Không có sản phẩm nào khớp với từ khóa <strong>"{{ query }}"</strong>.</p>
+            <a href="{% url 'products:product_list' %}" class="btn btn-dark mt-2 px-4 rounded-pill">Xem tất cả sản phẩm</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    /* Bê nguyên bộ hiệu ứng hover xịn xò vào đây */
+    .list-product-card { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); border-radius: 12px; }
+    .list-product-card:hover { transform: translateY(-8px); box-shadow: 0 15px 30px rgba(0,0,0,0.12) !important; }
+    .list-product-card img { transition: transform 0.6s ease; }
+    .list-product-card:hover img { transform: scale(1.08); }
+    .list-product-card .product-title { transition: color 0.3s ease; }
+    .list-product-card:hover .product-title { color: #dc3545; }
+    .object-fit-cover { object-fit: cover; }
+</style>
+{% endblock %}

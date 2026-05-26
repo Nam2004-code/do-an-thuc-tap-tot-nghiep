@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="reset-section" style="background-color: #f4f5f7; display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div class="reset-card" style="background-color: #ffffff; width: 100%; max-width: 420px; padding: 40px; border-radius: 12px;">
+        <h2 style="text-align: center;">XÁC THỰC OTP</h2>
+        <p style="text-align: center; color: #777;">Mã đã được gửi về Email của bạn</p>
+
+        {% if request.session.debug_reset_otp %}
+            <div style="padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center; background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba;">
+                OTP test (dev): <strong>{{ request.session.debug_reset_otp }}</strong>
+            </div>
+        {% endif %}
+
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 10px; margin-bottom: 15px; border-radius: 5px; text-align: center;
+                    {% if message.tags == 'error' %} background-color: #ffcccc; color: #cc0000;
+                    {% elif message.tags == 'warning' %} background-color: #fff3cd; color: #856404;
+                    {% else %} background-color: #d4edda; color: #155724; {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="input-group" style="margin-bottom: 20px;">
+                <label>Nhập mã 6 số</label>
+                <input type="text" name="otp" placeholder="xxxxxx" maxlength="6" style="width: 100%; padding: 14px; border: 1.5px solid #e0e0e0; border-radius: 8px;" required>
+            </div>
+            <button type="submit" style="width: 100%; padding: 16px; background-color: #ffc107; border: none; border-radius: 50px; font-weight: 800;">XÁC NHẬN</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
