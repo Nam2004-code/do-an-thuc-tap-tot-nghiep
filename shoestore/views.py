@@ -3,9 +3,14 @@ import json
 import logging
 import re
 import traceback
-from django.shortcuts import render
-from django.http import JsonResponse
+import urllib.parse
+import hashlib
+import hmac
+from datetime import datetime
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from dotenv import load_dotenv
 
 # SỬ DỤNG THƯ VIỆN GROQ (SIÊU NHANH & MIỄN PHÍ)
@@ -13,6 +18,7 @@ from groq import Groq
 
 from users.models import ChatMessage
 from products.models import Product, Category, Brand 
+from .models import Order  # Giả sử model Order nằm chung ứng dụng hoặc điều chỉnh sang: from orders.models import Order
 
 logger = logging.getLogger(__name__)
 load_dotenv() 
@@ -61,7 +67,7 @@ def chatbot_index(request):
 
 
 # ==========================================
-# 2. TIỆN ÍCH & BẢO VỆ DATABASE
+# 2. TIỆN ÍCH & BẢO VỆ DATABASE & VNPAY SERVICE
 # ==========================================
 
 def clean_text_for_db(text):
@@ -70,6 +76,53 @@ def clean_text_for_db(text):
         return ""
     # Chỉ giữ lại các ký tự thuộc chuẩn BMP (bao gồm tiếng Việt), loại bỏ emoji
     return ''.join(c for c in text if ord(c) < 0x10000)
+
+
+class VNPayService:
+    """Lớp bổ trợ mã hóa dữ liệu theo thuật toán SHA512 bảo mật của VNPay"""
+    def __init__(self, tmn_code, hash_secret, payment_url, return_url):
+        self.tmn_code = tmn_code
+        self.hash_secret = hash_secret
+        self.payment_url = payment_url
+        self.return_url = return_url
+
+    def generate_payment_url(self, order_id, amount, order_desc, ip_address, create_date):
+        vnp_params = {
+            'vnp_Version': '2.1.0',
+            'vnp_Command': 'pay',
+            'vnp_TmnCode': self.tmn_code,
+            'vnp_Amount': int(amount * 100),  # VNPay yêu cầu nhân 100 số tiền
+            'vnp_CurrCode': 'VND',
+            'vnp_TxnRef': str(order_id),
+            'vnp_OrderInfo': order_desc,
+            'vnp_OrderType': 'other',
+            'vnp_Locale': 'vn',
+            'vnp_ReturnUrl': self.return_url,
+            'vnp_IpAddr': ip_address,
+            'vnp_CreateDate': create_date,
+        }
+        sorted_params = sorted(vnp_params.items())
+        query_string = urllib.parse.urlencode(sorted_params)
+        hmac_value = hmac.new(
+            self.hash_secret.encode('utf-8'),
+            query_string.encode('utf-8'),
+            hashlib.sha512
+        ).hexdigest()
+        
+        return f"{self.payment_url}?{query_string}&vnp_SecureHash={hmac_value}"
+
+    def validate_response(self, response_data):
+        vnp_secure_hash = response_data.get('vnp_SecureHash', '')
+        params = {k: v for k, v in response_data.items() if k.startswith('vnp_') and k != 'vnp_SecureHash' and k != 'vnp_SecureHashType'}
+        sorted_params = sorted(params.items())
+        query_string = urllib.parse.urlencode(sorted_params)
+        calculated_hash = hmac.new(
+            self.hash_secret.encode('utf-8'),
+            query_string.encode('utf-8'),
+            hashlib.sha512
+        ).hexdigest()
+        
+        return calculated_hash == vnp_secure_hash
 
 
 # ==========================================
@@ -110,9 +163,7 @@ def get_response(request):
                 
                 products_context += f"- Mã SP: {p.id}. Tên: {p.name}. Loại: {cate}. Hãng: {brand}. Giá: {p.price} VNĐ. Size hiện có: {sizes}. Hình ảnh: {img_url}. Mô tả: {p.description}\n"
 
-            # ==========================================
             # DẠY AI: CHUYÊN VIÊN TƯ VẤN CAO CẤP
-            # ==========================================
             is_authenticated = request.user.is_authenticated
             auth_status = "ĐÃ ĐĂNG NHẬP" if is_authenticated else "CHƯA ĐĂNG NHẬP"
 
@@ -205,12 +256,81 @@ def get_response(request):
 def get_chat_history(request):
     """Lấy 50 tin nhắn lịch sử gần nhất để chat không bị trôi lên quá xa"""
     if request.user.is_authenticated:
-        # Sắp xếp giảm dần theo thời gian và chỉ lấy 50 cái mới nhất
         recent_history = ChatMessage.objects.filter(user=request.user).order_by('-created_at')[:50]
-        # Đảo ngược lại danh sách để tin nhắn hiển thị đúng thứ tự từ trên xuống dưới
         history = list(recent_history)[::-1]
         
         return JsonResponse({
             'history': [{'message': h.message, 'is_bot': h.is_bot} for h in history]
         })
     return JsonResponse({'history': []})
+
+
+# ==========================================
+# 4. TÍCH HỢP CỔNG THANH TOÁN VNPAY ONLINE
+# ==========================================
+
+def create_vnpay_payment(request, order_id):
+    """Hàm lấy thông tin đơn hàng và tạo link dẫn sang cổng thanh toán VNPay Sandbox"""
+    order = get_object_or_404(Order, id=order_id)
+    
+    # Khởi tạo công cụ VNPay Service từ cài đặt hệ thống công khai
+    vnpay = VNPayService(
+        tmn_code=settings.VNP_TMN_CODE,
+        hash_secret=settings.VNP_HASH_SECRET,
+        payment_url=settings.VNP_URL,
+        return_url=settings.VNP_RETURN_URL
+    )
+    
+    # Lấy thông tin IP của thiết bị khách hàng đang thao tác
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    ip_address = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR', '127.0.0.1')
+    
+    # Chuẩn hóa mốc thời gian đúng định dạng của VNPay: YYYYMMDDHHMMSS
+    create_date = datetime.now().strftime('%Y%m%d%H%M%S')
+    order_desc = f"Thanh toan don hang {order.id} tai Website Shoe Store"
+    
+    # Sinh liên kết URL mã hóa bảo mật cấp cao sang Sandbox
+    payment_url = vnpay.generate_payment_url(
+        order_id=order.id,
+        amount=float(order.total_amount),  # Lưu ý sửa .total_amount nếu trường tổng tiền của bạn đặt tên khác
+        order_desc=order_desc,
+        ip_address=ip_address,
+        create_date=create_date
+    )
+    
+    return redirect(payment_url)
+
+
+def vnpay_return(request):
+    """Hàm xử lý phản hồi dữ liệu sau khi khách thao tác xong bên trang cổng VNPay"""
+    response_data = request.GET.dict()
+    
+    vnpay = VNPayService(
+        tmn_code=settings.VNP_TMN_CODE,
+        hash_secret=settings.VNP_HASH_SECRET,
+        payment_url=settings.VNP_URL,
+        return_url=settings.VNP_RETURN_URL
+    )
+    
+    # Kiểm tra tính vẹn toàn của dữ liệu dựa trên Checksum mã hóa SHA512 công khai
+    if vnpay.validate_response(response_data):
+        order_id = response_data.get('vnp_TxnRef')
+        response_code = response_data.get('vnp_ResponseCode')
+        
+        try:
+            order = Order.objects.get(id=order_id)
+            
+            # Cờ trạng thái giao dịch '00' đại diện cho việc chuyển tiền thành công rực rỡ
+            if response_code == '00':
+                order.status = 'Paid'  # Cập nhật cờ thanh toán thành công
+                order.save()
+                return render(request, 'payment_success.html', {'order': order, 'vnpay_data': response_data})
+            else:
+                order.status = 'Payment_Failed'  # Ghi nhận lỗi/khách bấm hủy đơn
+                order.save()
+                return render(request, 'payment_failed.html', {'order': order, 'error_code': response_code})
+                
+        except Order.DoesNotExist:
+            return HttpResponse("Hệ thống không tìm thấy hóa đơn đơn hàng tương ứng.")
+    else:
+        return HttpResponse("Yêu cầu không hợp lệ! Xác thực chữ ký bảo mật (Checksum) thất bại.")

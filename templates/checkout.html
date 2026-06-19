@@ -1,651 +1,916 @@
-{% extends 'base.html' %}
-{% load humanize %}
-{% load l10n %}
-{% load static %} 
-
+{% extends 'base.html' %} {% load humanize %} {% load l10n %} {% load static %}
 {% block content %}
 <div class="checkout-page py-4 py-lg-5">
-    <div class="container">
-        <div class="checkout-hero mb-4 mb-lg-5">
-            <div>
-                <p class="checkout-kicker mb-2">Shoe Store / Checkout</p>
-                <h2 class="checkout-title mb-2">Xác nhận thanh toán</h2>
-                <p class="checkout-subtitle mb-0">Kiểm tra lại sản phẩm, chọn phương thức thanh toán và hoàn tất đơn hàng trong một bước.</p>
-            </div>
-            <a href="{% url 'cart:cart_detail' %}" class="btn btn-light border checkout-back-btn">
-                <i class="fas fa-arrow-left me-2"></i>Quay lại giỏ hàng
-            </a>
-        </div>
-
-        <div class="checkout-tracker mb-4">
-            <div class="tracker-step done"><span>1</span> Giỏ hàng</div>
-            <div class="tracker-line"></div>
-            <div class="tracker-step active"><span>2</span> Thanh toán</div>
-            <div class="tracker-line"></div>
-            <div class="tracker-step"><span>3</span> Hoàn tất</div>
-        </div>
-
-        <form id="checkout-form" method="POST" action="{% url 'orders:order_create' %}">
-        {% csrf_token %}
-        <input type="hidden" name="selected_items" id="selected-items-input" value="">
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="card checkout-card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
-                    <div class="card-header checkout-card-header py-3 py-lg-4 border-0 d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="mb-1 fw-bold text-white"><i class="fas fa-box-open me-2"></i>Sản phẩm đã chọn</h5>
-                            <span class="small text-white-50">Bỏ tick để loại bỏ món hàng khỏi đơn</span>
-                        </div>
-                        <span class="checkout-header-pill">Chọn tối thiểu 1 sản phẩm</span>
-                    </div>
-                    <div class="card-body p-0 bg-white">
-                        {% if items %}
-                            <div class="list-group list-group-flush checkout-items">
-                                {% for item in items %}
-                                <label class="list-group-item d-flex align-items-center py-3 py-lg-4 checkout-item-row">
-                                    <input
-                                        class="form-check-input me-3 checkout-item"
-                                        type="checkbox"
-                                        value="{{ item.item_key }}"
-                                        data-total="{{ item.total_price|unlocalize }}"
-                                        checked
-                                    >
-                                    <div class="checkout-product-image me-3">
-                                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold text-dark checkout-item-name">{{ item.product.name }}</div>
-                                        <div class="checkout-meta mt-1">
-                                            <span>Size {{ item.size }}</span>
-                                            <span>Số lượng: {{ item.quantity }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-danger fw-bold checkout-item-price">{{ item.total_price|intcomma }}₫</div>
-                                </label>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="p-5 text-center text-muted">
-                                <div class="checkout-empty-icon mb-3"><i class="fas fa-shopping-basket"></i></div>
-                                <h6 class="fw-bold mb-2">Không có sản phẩm nào được chọn</h6>
-                                Không có sản phẩm nào được chọn. Vui lòng quay lại giỏ hàng.
-                                <div class="mt-3">
-                                    <a href="{% url 'cart:cart_detail' %}" class="btn btn-outline-danger">Quay lại giỏ hàng</a>
-                                </div>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="card checkout-card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
-                    <div class="card-header checkout-section-header py-3 py-lg-4 border-0">
-                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-map-marker-alt me-2"></i>Thông tin nhận hàng</h5>
-                    </div>
-                    <div class="card-body p-4 p-lg-4 bg-white">
-                        <div class="row g-3">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-uppercase text-muted">Họ và tên</label>
-                                <input type="text" name="full_name" class="form-control checkout-input" placeholder="Nhập tên người nhận" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-uppercase text-muted">Số điện thoại</label>
-                                <input type="tel" name="phone" class="form-control checkout-input" placeholder="Nhập số điện thoại" required>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold small text-uppercase text-muted" id="address-label">Địa chỉ giao hàng</label>
-                                <textarea id="address-input" name="address" class="form-control checkout-input checkout-textarea" rows="3" placeholder="Số nhà, tên đường, phường/xã..." required></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card checkout-card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
-                    <div class="card-header checkout-section-header py-3 py-lg-4 border-0">
-                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-credit-card me-2"></i>Phương thức thanh toán</h5>
-                    </div>
-                    <div class="card-body p-4 bg-white">
-                        
-                        <div class="payment-item p-3 mb-3 rounded-4 border d-flex align-items-center cursor-pointer active-method" onclick="selectPayment('cod')">
-                            <input class="form-check-input m-0" type="radio" name="payment_method" id="cod" value="COD" checked>
-                            <div class="ms-3 d-flex align-items-center">
-                                <div class="payment-icon payment-icon-cod me-3"><i class="fas fa-truck"></i></div>
-                                <div>
-                                    <strong class="d-block">Thanh toán khi nhận hàng (COD)</strong>
-                                    <small class="text-muted">Trả tiền mặt khi Shipper giao hàng.</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="payment-item p-3 rounded-4 border cursor-pointer" onclick="selectPayment('bank')">
-                            <div class="d-flex align-items-center">
-                                <input class="form-check-input m-0" type="radio" name="payment_method" id="bank_transfer" value="BANK">
-                                <div class="ms-3 d-flex align-items-center flex-grow-1">
-                                    <div class="payment-icon payment-icon-bank me-3"><i class="fas fa-university"></i></div>
-                                    <div>
-                                        <strong class="d-block">Chuyển khoản ngân hàng (VietQR)</strong>
-                                        <small class="text-muted">Hỗ trợ quét mã qua mọi App ngân hàng.</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div id="bank-list" class="mt-3 d-none border-top pt-3 ms-4">
-                                <p class="small fw-bold mb-2 text-primary">Chọn ngân hàng bạn muốn chuyển đến:</p>
-                                <div class="row g-2">
-                                    <div class="col-4">
-                                        <div class="bank-card text-center border rounded p-2 active-bank" onclick="clickBank(event, this)">
-                                            <img src="https://api.vietqr.io/img/VCB.png" height="20" alt="VCB">
-                                            <div class="tiny-text mt-1">Vietcombank</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="bank-card text-center border rounded p-2" onclick="clickBank(event, this)">
-                                            <img src="https://api.vietqr.io/img/MB.png" height="20" alt="MB">
-                                            <div class="tiny-text mt-1">MB Bank</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="bank-card text-center border rounded p-2" onclick="clickBank(event, this)">
-                                            <img src="https://api.vietqr.io/img/TCB.png" height="20" alt="TCB">
-                                            <div class="tiny-text mt-1">Techcombank</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p class="small text-muted mt-2 mb-0"><i>* Mã QR thanh toán sẽ hiện ra sau khi bạn nhấn đặt hàng thành công.</i></p>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card checkout-summary checkout-summary-sticky shadow-sm border-0 rounded-4 overflow-hidden">
-                    <div class="card-header checkout-summary-header text-white py-3 py-lg-4 text-center border-0">
-                        <p class="checkout-summary-label mb-1">TÓM TẮT ĐƠN HÀNG</p>
-                        <h5 class="mb-0 fw-bold">Đơn hàng của bạn</h5>
-                    </div>
-                    <div class="card-body p-4 bg-white">
-                        <div class="summary-row">
-                            <span class="text-muted">Sản phẩm đã chọn</span>
-                            <strong id="selected-count">0</strong>
-                        </div>
-                        <div class="summary-row summary-total mb-4">
-                            <strong class="fs-5">Tổng tiền:</strong>
-                            <strong class="fs-4 text-danger"><span id="selected-total">0</span>₫</strong>
-                        </div>
-                        <div class="summary-note mb-3">
-                            <i class="fas fa-shield-alt me-2"></i> Thanh toán an toàn, xác nhận nhanh, hỗ trợ kiểm tra đơn trước khi gửi.
-                        </div>
-                        <button type="button" class="btn btn-danger w-100 py-3 fw-bold shadow-sm btn-confirm-checkout" id="btn-confirm">XÁC NHẬN ĐẶT HÀNG</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        </form>
+  <div class="container">
+    <div class="checkout-hero mb-4 mb-lg-5">
+      <div>
+        <p class="checkout-kicker mb-2">Shoe Store / Checkout</p>
+        <h2 class="checkout-title mb-2">Xác nhận thanh toán</h2>
+        <p class="checkout-subtitle mb-0">
+          Kiểm tra lại sản phẩm, chọn phương thức thanh toán và hoàn tất đơn
+          hàng trong một bước.
+        </p>
+      </div>
+      <a
+        href="{% url 'cart:cart_detail' %}"
+        class="btn btn-light border checkout-back-btn"
+      >
+        <i class="fas fa-arrow-left me-2"></i>Quay lại giỏ hàng
+      </a>
     </div>
+
+    <div class="checkout-tracker mb-4">
+      <div class="tracker-step done"><span>1</span> Giỏ hàng</div>
+      <div class="tracker-line"></div>
+      <div class="tracker-step active"><span>2</span> Thanh toán</div>
+      <div class="tracker-line"></div>
+      <div class="tracker-step"><span>3</span> Hoàn tất</div>
+    </div>
+
+    <form
+      id="checkout-form"
+      method="POST"
+      action="{% url 'orders:order_create' %}"
+    >
+      {% csrf_token %}
+      <input
+        type="hidden"
+        name="selected_items"
+        id="selected-items-input"
+        value=""
+      />
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div
+            class="card checkout-card shadow-sm border-0 mb-4 rounded-4 overflow-hidden"
+          >
+            <div
+              class="card-header checkout-card-header py-3 py-lg-4 border-0 d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <h5 class="mb-1 fw-bold text-white">
+                  <i class="fas fa-box-open me-2"></i>Sản phẩm đã chọn
+                </h5>
+                <span class="small text-white-50"
+                  >Bỏ tick để loại bỏ món hàng khỏi đơn</span
+                >
+              </div>
+              <span class="checkout-header-pill"
+                >Chọn tối thiểu 1 sản phẩm</span
+              >
+            </div>
+            <div class="card-body p-0 bg-white">
+              {% if items %}
+              <div class="list-group list-group-flush checkout-items">
+                {% for item in items %}
+                <label
+                  class="list-group-item d-flex align-items-center py-3 py-lg-4 checkout-item-row"
+                >
+                  <input
+                    class="form-check-input me-3 checkout-item"
+                    type="checkbox"
+                    value="{{ item.item_key }}"
+                    data-total="{{ item.total_price|unlocalize }}"
+                    checked
+                  />
+                  <div class="checkout-product-image me-3">
+                    <img
+                      src="{{ item.product.image.url }}"
+                      alt="{{ item.product.name }}"
+                    />
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-bold text-dark checkout-item-name">
+                      {{ item.product.name }}
+                    </div>
+                    <div class="checkout-meta mt-1">
+                      <span>Size {{ item.size }}</span>
+                      <span>Số lượng: {{ item.quantity }}</span>
+                    </div>
+                  </div>
+                  <div class="text-danger fw-bold checkout-item-price">
+                    {{ item.total_price|intcomma }}₫
+                  </div>
+                </label>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="p-5 text-center text-muted">
+                <div class="checkout-empty-icon mb-3">
+                  <i class="fas fa-shopping-basket"></i>
+                </div>
+                <h6 class="fw-bold mb-2">Không có sản phẩm nào được chọn</h6>
+                Không có sản phẩm nào được chọn. Vui lòng quay lại giỏ hàng.
+                <div class="mt-3">
+                  <a
+                    href="{% url 'cart:cart_detail' %}"
+                    class="btn btn-outline-danger"
+                    >Quay lại giỏ hàng</a
+                  >
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div
+            class="card checkout-card shadow-sm border-0 mb-4 rounded-4 overflow-hidden"
+          >
+            <div
+              class="card-header checkout-section-header py-3 py-lg-4 border-0"
+            >
+              <h5 class="mb-0 fw-bold text-white">
+                <i class="fas fa-map-marker-alt me-2"></i>Thông tin nhận hàng
+              </h5>
+            </div>
+            <div class="card-body p-4 p-lg-4 bg-white">
+              <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                  <label
+                    class="form-label fw-bold small text-uppercase text-muted"
+                    >Họ và tên</label
+                  >
+                  <input
+                    type="text"
+                    name="full_name"
+                    class="form-control checkout-input"
+                    placeholder="Nhập tên người nhận"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label
+                    class="form-label fw-bold small text-uppercase text-muted"
+                    >Số điện thoại</label
+                  >
+                  <input
+                    type="tel"
+                    name="phone"
+                    class="form-control checkout-input"
+                    placeholder="Nhập số điện thoại"
+                    required
+                  />
+                </div>
+                <div class="col-12">
+                  <label
+                    class="form-label fw-bold small text-uppercase text-muted"
+                    id="address-label"
+                    >Địa chỉ giao hàng</label
+                  >
+                  <textarea
+                    id="address-input"
+                    name="address"
+                    class="form-control checkout-input checkout-textarea"
+                    rows="3"
+                    placeholder="Số nhà, tên đường, phường/xã..."
+                    required
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="card checkout-card shadow-sm border-0 mb-4 rounded-4 overflow-hidden"
+          >
+            <div
+              class="card-header checkout-section-header py-3 py-lg-4 border-0"
+            >
+              <h5 class="mb-0 fw-bold text-white">
+                <i class="fas fa-credit-card me-2"></i>Phương thức thanh toán
+              </h5>
+            </div>
+            <div class="card-body p-4 bg-white">
+              <div
+                class="payment-item p-3 mb-3 rounded-4 border d-flex align-items-center cursor-pointer active-method"
+                onclick="selectPayment('cod')"
+              >
+                <input
+                  class="form-check-input m-0"
+                  type="radio"
+                  name="payment_method"
+                  id="cod"
+                  value="COD"
+                  checked
+                />
+                <div class="ms-3 d-flex align-items-center">
+                  <div class="payment-icon payment-icon-cod me-3">
+                    <i class="fas fa-truck"></i>
+                  </div>
+                  <div>
+                    <strong class="d-block"
+                      >Thanh toán khi nhận hàng (COD)</strong
+                    >
+                    <small class="text-muted"
+                      >Trả tiền mặt khi Shipper giao hàng.</small
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="payment-item p-3 mb-3 rounded-4 border d-flex align-items-center cursor-pointer"
+                onclick="selectPayment('vnpay')"
+              >
+                <input
+                  class="form-check-input m-0"
+                  type="radio"
+                  name="payment_method"
+                  id="vnpay"
+                  value="VNPAY"
+                />
+                <div class="ms-3 d-flex align-items-center">
+                  <div class="payment-icon payment-icon-vnpay me-3">
+                    <img
+                      src="https://sandbox.vnpayment.vn/paymentv2/images/brands/logo-vnpay.png"
+                      alt="VNPay logo"
+                    />
+                  </div>
+                  <div>
+                    <strong class="d-block"
+                      >Thanh toán trực tuyến qua cổng VNPay</strong
+                    >
+                    <small class="text-muted"
+                      >Hỗ trợ Thẻ ATM nội địa, Thẻ quốc tế Visa/Master hoặc Ứng
+                      dụng Mobile Banking quét mã QR.</small
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="payment-item p-3 rounded-4 border cursor-pointer"
+                onclick="selectPayment('bank')"
+              >
+                <div class="d-flex align-items-center">
+                  <input
+                    class="form-check-input m-0"
+                    type="radio"
+                    name="payment_method"
+                    id="bank_transfer"
+                    value="BANK"
+                  />
+                  <div class="ms-3 d-flex align-items-center flex-grow-1">
+                    <div class="payment-icon payment-icon-bank me-3">
+                      <i class="fas fa-university"></i>
+                    </div>
+                    <div>
+                      <strong class="d-block"
+                        >Chuyển khoản ngân hàng (VietQR)</strong
+                      >
+                      <small class="text-muted"
+                        >Hỗ trợ quét mã qua mọi App ngân hàng.</small
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div id="bank-list" class="mt-3 d-none border-top pt-3 ms-4">
+                  <p class="small fw-bold mb-2 text-primary">
+                    Chọn ngân hàng bạn muốn chuyển đến:
+                  </p>
+                  <div class="row g-2">
+                    <div class="col-4">
+                      <div
+                        class="bank-card text-center border rounded p-2 active-bank"
+                        onclick="clickBank(event, this)"
+                      >
+                        <img
+                          src="https://api.vietqr.io/img/VCB.png"
+                          height="20"
+                          alt="VCB"
+                        />
+                        <div class="tiny-text mt-1">Vietcombank</div>
+                      </div>
+                    </div>
+                    <div class="col-4">
+                      <div
+                        class="bank-card text-center border rounded p-2"
+                        onclick="clickBank(event, this)"
+                      >
+                        <img
+                          src="https://api.vietqr.io/img/MB.png"
+                          height="20"
+                          alt="MB"
+                        />
+                        <div class="tiny-text mt-1">MB Bank</div>
+                      </div>
+                    </div>
+                    <div class="col-4">
+                      <div
+                        class="bank-card text-center border rounded p-2"
+                        onclick="clickBank(event, this)"
+                      >
+                        <img
+                          src="https://api.vietqr.io/img/TCB.png"
+                          height="20"
+                          alt="TCB"
+                        />
+                        <div class="tiny-text mt-1">Techcombank</div>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="small text-muted mt-2 mb-0">
+                    <i
+                      >* Mã QR thanh toán sẽ hiện ra sau khi bạn nhấn đặt hàng
+                      thành công.</i
+                    >
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div
+            class="card checkout-summary checkout-summary-sticky shadow-sm border-0 rounded-4 overflow-hidden"
+          >
+            <div
+              class="card-header checkout-summary-header text-white py-3 py-lg-4 text-center border-0"
+            >
+              <p class="checkout-summary-label mb-1">TÓM TẮT ĐƠN HÀNG</p>
+              <h5 class="mb-0 fw-bold">Đơn hàng của bạn</h5>
+            </div>
+            <div class="card-body p-4 bg-white">
+              <div class="summary-row">
+                <span class="text-muted">Sản phẩm đã chọn</span>
+                <strong id="selected-count">0</strong>
+              </div>
+              <div class="summary-row summary-total mb-4">
+                <strong class="fs-5">Tổng tiền:</strong>
+                <strong class="fs-4 text-danger"
+                  ><span id="selected-total">0</span>₫</strong
+                >
+              </div>
+              <div class="summary-note mb-3">
+                <i class="fas fa-shield-alt me-2"></i> Thanh toán an toàn, xác
+                nhận nhanh, hỗ trợ kiểm tra đơn trước khi gửi.
+              </div>
+              <button
+                type="button"
+                class="btn btn-danger w-100 py-3 fw-bold shadow-sm btn-confirm-checkout"
+                id="btn-confirm"
+              >
+                XÁC NHẬN ĐẶT HÀNG
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
 <style>
-    .checkout-page {
-        background:
-            radial-gradient(circle at top left, rgba(220, 53, 69, 0.08), transparent 28%),
-            radial-gradient(circle at top right, rgba(13, 110, 253, 0.08), transparent 24%),
-            linear-gradient(180deg, #f7f8fc 0%, #ffffff 100%);
-        min-height: 100%;
-    }
+  .checkout-page {
+    background:
+      radial-gradient(
+        circle at top left,
+        rgba(220, 53, 69, 0.08),
+        transparent 28%
+      ),
+      radial-gradient(
+        circle at top right,
+        rgba(13, 110, 253, 0.08),
+        transparent 24%
+      ),
+      linear-gradient(180deg, #f7f8fc 0%, #ffffff 100%);
+    min-height: 100%;
+  }
 
+  .checkout-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem 1.5rem 1.25rem;
+    border-radius: 1.5rem;
+    background: linear-gradient(135deg, #111827 0%, #1f2937 55%, #dc3545 100%);
+    color: #fff;
+    box-shadow: 0 18px 40px rgba(17, 24, 39, 0.16);
+  }
+
+  .checkout-kicker {
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .checkout-title {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .checkout-subtitle {
+    max-width: 58rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .checkout-back-btn {
+    flex-shrink: 0;
+    border-radius: 999px;
+    padding: 0.8rem 1.2rem;
+    font-weight: 700;
+  }
+
+  .checkout-tracker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .tracker-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 0.95rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  }
+
+  .tracker-step span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 0.8rem;
+  }
+
+  .tracker-step.done,
+  .tracker-step.active {
+    color: #111827;
+  }
+
+  .tracker-step.done span {
+    background: #dc3545;
+    color: #fff;
+  }
+
+  .tracker-step.active span {
+    background: #0d6efd;
+    color: #fff;
+  }
+
+  .tracker-line {
+    width: 2rem;
+    height: 2px;
+    background: linear-gradient(90deg, #dc3545, #0d6efd);
+    border-radius: 999px;
+  }
+
+  .checkout-card,
+  .checkout-summary {
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07) !important;
+  }
+
+  .checkout-summary-sticky {
+    position: sticky;
+    top: 96px;
+    align-self: flex-start;
+  }
+
+  .checkout-card-header,
+  .checkout-section-header {
+    background: linear-gradient(135deg, #dc3545 0%, #b91c1c 100%);
+  }
+
+  .checkout-header-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .checkout-items .checkout-item-row {
+    transition:
+      background-color 0.2s ease,
+      transform 0.2s ease;
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .checkout-items .checkout-item-row:hover {
+    background-color: #fafcff;
+    transform: translateY(-1px);
+  }
+
+  .checkout-product-image {
+    width: 76px;
+    height: 76px;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+    border: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+
+  .checkout-product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .checkout-item-name {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .checkout-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  .checkout-meta span {
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+  }
+
+  .checkout-item-price {
+    min-width: 8rem;
+    text-align: right;
+    font-size: 1rem;
+  }
+
+  .checkout-empty-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 999px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    font-size: 1.4rem;
+  }
+
+  .checkout-input {
+    border: 1px solid #e5e7eb !important;
+    background: #f8fafc;
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .checkout-input:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.12);
+    background: #fff;
+  }
+
+  .checkout-textarea {
+    min-height: 7.5rem;
+  }
+
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  .payment-item {
+    border: 1px solid #dee2e6 !important;
+    transition: all 0.2s ease;
+    border-radius: 1rem;
+  }
+  .active-method {
+    background-color: #fff7f8 !important;
+    border-color: #dc3545 !important;
+    border-width: 2px !important;
+    box-shadow: 0 8px 24px rgba(220, 53, 69, 0.08);
+  }
+
+  .payment-icon {
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .payment-icon-cod {
+    background: rgba(25, 135, 84, 0.12);
+    color: #198754;
+  }
+  .payment-icon-bank {
+    background: rgba(13, 110, 253, 0.12);
+    color: #0d6efd;
+  }
+
+  /* Style mới cho logo VNPay */
+  .payment-icon-vnpay {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 4px;
+  }
+  .payment-icon-vnpay img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .bank-card {
+    background: #fff;
+    border: 1px solid #eee !important;
+    transition: 0.2s;
+    cursor: pointer;
+    border-radius: 0.9rem;
+  }
+  .bank-card:hover {
+    border-color: #0d6efd !important;
+  }
+  .active-bank {
+    border-color: #0d6efd !important;
+    background-color: #eef6ff !important;
+    border-width: 2px !important;
+  }
+  .tiny-text {
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .checkout-item-row {
+    cursor: pointer;
+  }
+  .checkout-item-row:hover {
+    background-color: #fafcff;
+  }
+  .checkout-summary-header {
+    background: linear-gradient(135deg, #111827 0%, #dc3545 100%);
+  }
+  .checkout-summary-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .summary-total {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eef2f7;
+  }
+  .summary-note {
+    display: flex;
+    align-items: flex-start;
+    padding: 0.85rem 0.95rem;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #fff7f8 0%, #fff 100%);
+    border: 1px solid #f1d0d5;
+    color: #7f1d1d;
+    font-size: 0.9rem;
+  }
+  .btn-confirm-checkout {
+    border-radius: 999px;
+    font-size: 0.98rem;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 991.98px) {
     .checkout-hero {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1.5rem 1.5rem 1.25rem;
-        border-radius: 1.5rem;
-        background: linear-gradient(135deg, #111827 0%, #1f2937 55%, #dc3545 100%);
-        color: #fff;
-        box-shadow: 0 18px 40px rgba(17, 24, 39, 0.16);
-    }
-
-    .checkout-kicker {
-        font-size: 0.78rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.75);
-    }
-
-    .checkout-title {
-        font-weight: 800;
-        letter-spacing: -0.03em;
-    }
-
-    .checkout-subtitle {
-        max-width: 58rem;
-        color: rgba(255, 255, 255, 0.8);
-    }
-
-    .checkout-back-btn {
-        flex-shrink: 0;
-        border-radius: 999px;
-        padding: 0.8rem 1.2rem;
-        font-weight: 700;
+      flex-direction: column;
+      align-items: flex-start;
     }
 
     .checkout-tracker {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-    }
-
-    .tracker-step {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.55rem;
-        padding: 0.6rem 0.95rem;
-        border-radius: 999px;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        color: #6b7280;
-        font-weight: 700;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
-    }
-
-    .tracker-step span {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 999px;
-        background: #e5e7eb;
-        color: #374151;
-        font-size: 0.8rem;
-    }
-
-    .tracker-step.done,
-    .tracker-step.active {
-        color: #111827;
-    }
-
-    .tracker-step.done span {
-        background: #dc3545;
-        color: #fff;
-    }
-
-    .tracker-step.active span {
-        background: #0d6efd;
-        color: #fff;
+      justify-content: flex-start;
     }
 
     .tracker-line {
-        width: 2rem;
-        height: 2px;
-        background: linear-gradient(90deg, #dc3545, #0d6efd);
-        border-radius: 999px;
-    }
-
-    .checkout-card,
-    .checkout-summary {
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07) !important;
+      width: 1.25rem;
     }
 
     .checkout-summary-sticky {
-        position: sticky;
-        top: 96px;
-        align-self: flex-start;
+      position: static;
+      top: auto;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .checkout-page {
+      padding-top: 1rem !important;
     }
 
-    .checkout-card-header,
-    .checkout-section-header {
-        background: linear-gradient(135deg, #dc3545 0%, #b91c1c 100%);
-    }
-
-    .checkout-header-pill {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.45rem 0.8rem;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.16);
-        color: #fff;
-        font-size: 0.82rem;
-        font-weight: 700;
-    }
-
-    .checkout-items .checkout-item-row {
-        transition: background-color 0.2s ease, transform 0.2s ease;
-        border-bottom: 1px solid #eef2f7;
-    }
-
-    .checkout-items .checkout-item-row:hover {
-        background-color: #fafcff;
-        transform: translateY(-1px);
+    .checkout-hero,
+    .card-body {
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
     }
 
     .checkout-product-image {
-        width: 76px;
-        height: 76px;
-        border-radius: 1rem;
-        overflow: hidden;
-        background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
-        border: 1px solid #e5e7eb;
-        flex-shrink: 0;
-    }
-
-    .checkout-product-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .checkout-item-name {
-        font-size: 1rem;
-        line-height: 1.35;
-    }
-
-    .checkout-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        color: #6b7280;
-    }
-
-    .checkout-meta span {
-        padding: 0.35rem 0.6rem;
-        border-radius: 999px;
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
+      width: 64px;
+      height: 64px;
     }
 
     .checkout-item-price {
-        min-width: 8rem;
-        text-align: right;
-        font-size: 1rem;
+      min-width: auto;
+      font-size: 0.92rem;
     }
-
-    .checkout-empty-icon {
-        width: 3.5rem;
-        height: 3.5rem;
-        border-radius: 999px;
-        margin: 0 auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-        font-size: 1.4rem;
-    }
-
-    .checkout-input {
-        border: 1px solid #e5e7eb !important;
-        background: #f8fafc;
-        border-radius: 1rem;
-        padding: 0.85rem 1rem;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .checkout-input:focus {
-        border-color: #dc3545 !important;
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.12);
-        background: #fff;
-    }
-
-    .checkout-textarea {
-        min-height: 7.5rem;
-    }
-
-    .cursor-pointer { cursor: pointer; }
-    .payment-item { border: 1px solid #dee2e6 !important; transition: all 0.2s ease; border-radius: 1rem; }
-    .active-method { background-color: #fff7f8 !important; border-color: #dc3545 !important; border-width: 2px !important; box-shadow: 0 8px 24px rgba(220, 53, 69, 0.08); }
-    .payment-icon {
-        width: 2.7rem;
-        height: 2.7rem;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-        flex-shrink: 0;
-    }
-    .payment-icon-cod { background: rgba(25, 135, 84, 0.12); color: #198754; }
-    .payment-icon-bank { background: rgba(13, 110, 253, 0.12); color: #0d6efd; }
-    .bank-card { background: #fff; border: 1px solid #eee !important; transition: 0.2s; cursor: pointer; border-radius: 0.9rem; }
-    .bank-card:hover { border-color: #0d6efd !important; }
-    .active-bank { border-color: #0d6efd !important; background-color: #eef6ff !important; border-width: 2px !important; }
-    .tiny-text { font-size: 10px; font-weight: bold; }
-    .checkout-item-row { cursor: pointer; }
-    .checkout-item-row:hover { background-color: #fafcff; }
-    .checkout-summary-header {
-        background: linear-gradient(135deg, #111827 0%, #dc3545 100%);
-    }
-    .checkout-summary-label {
-        font-size: 0.72rem;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.7);
-    }
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 0.75rem;
-    }
-    .summary-total {
-        padding-bottom: 1rem;
-        border-bottom: 1px solid #eef2f7;
-    }
-    .summary-note {
-        display: flex;
-        align-items: flex-start;
-        padding: 0.85rem 0.95rem;
-        border-radius: 1rem;
-        background: linear-gradient(135deg, #fff7f8 0%, #fff 100%);
-        border: 1px solid #f1d0d5;
-        color: #7f1d1d;
-        font-size: 0.9rem;
-    }
-    .btn-confirm-checkout {
-        border-radius: 999px;
-        font-size: 0.98rem;
-        letter-spacing: 0.02em;
-    }
-
-    @media (max-width: 991.98px) {
-        .checkout-hero {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .checkout-tracker {
-            justify-content: flex-start;
-        }
-
-        .tracker-line {
-            width: 1.25rem;
-        }
-
-        .checkout-summary-sticky {
-            position: static;
-            top: auto;
-        }
-    }
-
-    @media (max-width: 575.98px) {
-        .checkout-page {
-            padding-top: 1rem !important;
-        }
-
-        .checkout-hero,
-        .card-body {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-        }
-
-        .checkout-product-image {
-            width: 64px;
-            height: 64px;
-        }
-
-        .checkout-item-price {
-            min-width: auto;
-            font-size: 0.92rem;
-        }
-    }
+  }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    const baseOrderCreateUrl = "{% url 'orders:order_create' %}";
+  const baseOrderCreateUrl = "{% url 'orders:order_create' %}";
 
-    function formatMoney(value) {
-        return new Intl.NumberFormat('vi-VN').format(Math.max(0, Math.round(value || 0)));
-    }
+  function formatMoney(value) {
+    return new Intl.NumberFormat("vi-VN").format(
+      Math.max(0, Math.round(value || 0)),
+    );
+  }
 
-    function cleanPrice(value) {
-        return parseFloat(String(value || '0').replace(/\./g, '').replace(/,/g, '')) || 0;
-    }
+  function cleanPrice(value) {
+    return (
+      parseFloat(
+        String(value || "0")
+          .replace(/\./g, "")
+          .replace(/,/g, ""),
+      ) || 0
+    );
+  }
 
-    function updateCheckoutSummary() {
-        const checkedItems = document.querySelectorAll('.checkout-item:checked');
-        let total = 0;
-        const selectedKeys = [];
+  function updateCheckoutSummary() {
+    const checkedItems = document.querySelectorAll(".checkout-item:checked");
+    let total = 0;
+    const selectedKeys = [];
 
-        checkedItems.forEach((item) => {
-            total += cleanPrice(item.dataset.total);
-            selectedKeys.push(item.value);
-        });
-
-        document.getElementById('selected-count').textContent = checkedItems.length;
-        document.getElementById('selected-total').textContent = formatMoney(total);
-        document.getElementById('selected-items-input').value = selectedKeys.join(',');
-    }
-
-    function getSelectedKeys() {
-        return Array.from(document.querySelectorAll('.checkout-item:checked')).map((item) => item.value);
-    }
-
-    function syncAddressFieldByPayment() {
-        const addressInput = document.getElementById('address-input');
-        const addressLabel = document.getElementById('address-label');
-
-        addressInput.required = true;
-        addressInput.placeholder = 'Số nhà, tên đường, phường/xã...';
-        addressLabel.textContent = 'Địa chỉ giao hàng';
-    }
-
-    // Hàm chọn phương thức thanh toán lớn
-    function selectPayment(id) {
-        document.querySelectorAll('.payment-item').forEach(i => i.classList.remove('active-method'));
-        const radioId = (id === 'bank') ? 'bank_transfer' : id;
-        const radio = document.getElementById(radioId);
-        radio.checked = true;
-        radio.closest('.payment-item').classList.add('active-method');
-        
-        const bankList = document.getElementById('bank-list');
-        if (id === 'bank') {
-            bankList.classList.remove('d-none');
-        } else {
-            bankList.classList.add('d-none');
-        }
-
-        syncAddressFieldByPayment();
-    }
-
-    // Hàm chọn ngân hàng con
-    function clickBank(event, element) {
-        event.stopPropagation(); // Ngăn không cho sự kiện lan ra ngoài
-        document.querySelectorAll('.bank-card').forEach(card => card.classList.remove('active-bank'));
-        element.classList.add('active-bank');
-    }
-
-    document.querySelectorAll('.checkout-item').forEach((checkbox) => {
-        checkbox.addEventListener('change', updateCheckoutSummary);
+    checkedItems.forEach((item) => {
+      total += cleanPrice(item.dataset.total);
+      selectedKeys.push(item.value);
     });
 
-    updateCheckoutSummary();
+    document.getElementById("selected-count").textContent = checkedItems.length;
+    document.getElementById("selected-total").textContent = formatMoney(total);
+    document.getElementById("selected-items-input").value =
+      selectedKeys.join(",");
+  }
+
+  function getSelectedKeys() {
+    return Array.from(document.querySelectorAll(".checkout-item:checked")).map(
+      (item) => item.value,
+    );
+  }
+
+  function syncAddressFieldByPayment() {
+    const addressInput = document.getElementById("address-input");
+    const addressLabel = document.getElementById("address-label");
+
+    addressInput.required = true;
+    addressInput.placeholder = "Số nhà, tên đường, phường/xã...";
+    addressLabel.textContent = "Địa chỉ giao hàng";
+  }
+
+  // Hàm chọn phương thức thanh toán lớn (Đã chỉnh sửa đồng bộ cho cả vnpay)
+  function selectPayment(id) {
+    document
+      .querySelectorAll(".payment-item")
+      .forEach((i) => i.classList.remove("active-method"));
+
+    let radioId = id;
+    if (id === "bank") {
+      radioId = "bank_transfer";
+    }
+
+    const radio = document.getElementById(radioId);
+    radio.checked = true;
+    radio.closest(".payment-item").classList.add("active-method");
+
+    const bankList = document.getElementById("bank-list");
+    if (id === "bank") {
+      bankList.classList.remove("d-none");
+    } else {
+      bankList.classList.add("d-none");
+    }
+
     syncAddressFieldByPayment();
+  }
 
-    document.getElementById('btn-confirm').addEventListener('click', function() {
-        const form = document.getElementById('checkout-form');
-        
-        // Get form values
-        const fullName = document.querySelector('input[name="full_name"]').value.trim();
-        const phone = document.querySelector('input[name="phone"]').value.trim();
-        const address = document.querySelector('textarea[name="address"]').value.trim();
-        const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
-        
-        // Validation errors
-        const errors = [];
-        
-        // Validate product selection
-        const selectedKeys = getSelectedKeys();
-        if (selectedKeys.length === 0) {
-            errors.push('Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng');
-        }
-        
-        // Validate full name
-        if (!fullName) {
-            errors.push('Vui lòng nhập họ và tên');
-        } else if (fullName.length > 200) {
-            errors.push('Họ và tên không được vượt quá 200 ký tự');
-        }
-        
-        // Validate phone
-        if (!phone) {
-            errors.push('Vui lòng nhập số điện thoại');
-        } else if (!/^\d+$/.test(phone)) {
-            errors.push('Số điện thoại chỉ được chứa các chữ số');
-        } else if (phone.length < 9 || phone.length > 11) {
-            errors.push('Số điện thoại phải từ 9-11 chữ số');
-        }
-        
-        // Validate address
-        if (!address) {
-            errors.push('Vui lòng nhập địa chỉ giao hàng');
-        } else if (address.length > 1000) {
-            errors.push('Địa chỉ không được vượt quá 1000 ký tự');
-        }
-        
-        // Show errors if any
-        if (errors.length > 0) {
-            showCheckoutErrors(errors);
-            return;
-        }
+  // Hàm chọn ngân hàng con
+  function clickBank(event, element) {
+    event.stopPropagation(); // Ngăn không cho sự kiện lan ra ngoài
+    document
+      .querySelectorAll(".bank-card")
+      .forEach((card) => card.classList.remove("active-bank"));
+    element.classList.add("active-bank");
+  }
 
-        document.getElementById('selected-items-input').value = selectedKeys.join(',');
-        
-        Swal.fire({
-            title: 'Xác nhận đặt hàng?',
-            text: "Cảm ơn bạn đã tin tưởng Shoe Store!",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Đồng ý',
-            cancelButtonText: 'Hủy'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
-    });
-    
-    function showCheckoutErrors(errors) {
-        let errorHtml = '<ul class="mb-0">';
-        errors.forEach(error => {
-            errorHtml += `<li>${error}</li>`;
-        });
-        errorHtml += '</ul>';
-        
-        Swal.fire({
-            icon: 'error',
-            title: 'Vui lòng kiểm tra lại thông tin',
-            html: errorHtml,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Đóng'
-        });
+  document.querySelectorAll(".checkout-item").forEach((checkbox) => {
+    checkbox.addEventListener("change", updateCheckoutSummary);
+  });
+
+  updateCheckoutSummary();
+  syncAddressFieldByPayment();
+
+  document.getElementById("btn-confirm").addEventListener("click", function () {
+    const form = document.getElementById("checkout-form");
+
+    // Get form values
+    const fullName = document
+      .querySelector('input[name="full_name"]')
+      .value.trim();
+    const phone = document.querySelector('input[name="phone"]').value.trim();
+    const address = document
+      .querySelector('textarea[name="address"]')
+      .value.trim();
+    const paymentMethod = document.querySelector(
+      'input[name="payment_method"]:checked',
+    ).value;
+
+    // Validation errors
+    const errors = [];
+
+    // Validate product selection
+    const selectedKeys = getSelectedKeys();
+    if (selectedKeys.length === 0) {
+      errors.push("Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng");
     }
 
+    // Validate full name
+    if (!fullName) {
+      errors.push("Vui lòng nhập họ và tên");
+    } else if (fullName.length > 200) {
+      errors.push("Họ và tên không được vượt quá 200 ký tự");
+    }
+
+    // Validate phone
+    if (!phone) {
+      errors.push("Vui lòng nhập số điện thoại");
+    } else if (!/^\d+$/.test(phone)) {
+      errors.push("Số điện thoại chỉ được chứa các chữ số");
+    } else if (phone.length < 9 || phone.length > 11) {
+      errors.push("Số điện thoại phải từ 9-11 chữ số");
+    }
+
+    // Validate address
+    if (!address) {
+      errors.push("Vui lòng nhập địa chỉ giao hàng");
+    } else if (address.length > 1000) {
+      errors.push("Địa chỉ không được vượt quá 1000 ký tự");
+    }
+
+    // Show errors if any
+    if (errors.length > 0) {
+      showCheckoutErrors(errors);
+      return;
+    }
+
+    document.getElementById("selected-items-input").value =
+      selectedKeys.join(",");
+
+    Swal.fire({
+      title: "Xác nhận đặt hàng?",
+      text: "Cảm ơn bạn đã tin tưởng Shoe Store!",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.submit();
+      }
+    });
+  });
+
+  function showCheckoutErrors(errors) {
+    let errorHtml = '<ul class="mb-0">';
+    errors.forEach((error) => {
+      errorHtml += `<li>${error}</li>`;
+    });
+    errorHtml += "</ul>";
+
+    Swal.fire({
+      icon: "error",
+      title: "Vui lòng kiểm tra lại thông tin",
+      html: errorHtml,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Đóng",
+    });
+  }
 </script>
 {% endblock %}

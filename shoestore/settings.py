@@ -302,3 +302,8 @@ EMAIL_BACKEND = os.getenv(
     'django.core.mail.backends.smtp.EmailBackend' if (EMAIL_HOST_USER and EMAIL_HOST_PASSWORD) else 'django.core.mail.backends.console.EmailBackend',
 )
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@shoestore.local')
+# Cấu hình cấu hình VNPay Sandbox
+VNP_TMN_CODE = "2QTYXRT3"  # Mã website thử nghiệm được cấp bởi VNPay
+VNP_HASH_SECRET = "9CNEP66Z14MRMT0W7Z701XJ9U5F63Q8H"  # Chuỗi bí mật để tạo mã băm bảo mật (Checksum)
+VNP_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"  # Đường dẫn sang cổng VNPay
+VNP_RETURN_URL = "http://127.0.0.1:8000/order/vnpay-return/"  # Link VNPay sẽ trả kết quả về sau khi thanh toán xong

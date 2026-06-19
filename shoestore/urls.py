@@ -8,6 +8,8 @@ from products import views as product_views  # ĐÃ THÊM: Import views từ app
 
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import path
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -47,9 +49,14 @@ urlpatterns = [
     # Versioned API (recommended)
     path('api/v1/', include('shoestore.api_urls')),
     path('orders/', include('orders.urls', namespace='orders')),
+    path('order/payment/<int:order_id>/', views.create_vnpay_payment, name='create_vnpay_payment'),
+    
+    # URL nhận phản hồi kết quả (Phải trùng hoàn toàn với VNP_RETURN_URL trong settings.py)
+    path('order/vnpay-return/', views.vnpay_return, name='vnpay_return'),
 
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    
