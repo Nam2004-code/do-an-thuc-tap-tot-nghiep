@@ -6,6 +6,7 @@ import traceback
 import urllib.parse
 import hashlib
 import hmac
+import requests  # <-- Thêm thư viện requests để thực hiện HTTP POST request sang API SpeedSMS
 from datetime import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -67,7 +68,7 @@ def chatbot_index(request):
 
 
 # ==========================================
-# 2. TIỆN ÍCH & BẢO VỆ DATABASE & VNPAY SERVICE
+# 2. TIỆN ÍCH & BẢO VỆ DATABASE & VNPAY SERVICE & SMS GATEWAY
 # ==========================================
 
 def clean_text_for_db(text):
@@ -76,6 +77,53 @@ def clean_text_for_db(text):
         return ""
     # Chỉ giữ lại các ký tự thuộc chuẩn BMP (bao gồm tiếng Việt), loại bỏ emoji
     return ''.join(c for c in text if ord(c) < 0x10000)
+
+
+def send_sms_notification(phone_number, order_id, total_price):
+    """
+    🔥 TÍNH NĂNG NÂNG CAO: Kết nối API SpeedSMS để tự động gửi thông báo thời gian thực
+    """
+    # Lấy thông tin cấu hình bảo mật từ settings hoặc biến môi trường .env
+    api_key = os.getenv("SPEEDSMS_API_KEY", "MÃ_API_MẶC_ĐỊNH_NẾU_CHƯA_CÓ")
+    sender_name = os.getenv("SPEEDSMS_SENDER", "SpeedSMS")
+    url = "https://api.speedsms.vn/index.php/sms/send"
+    
+    if not phone_number:
+        return False
+
+    # Định dạng lại số điện thoại về chuẩn Quốc tế 84 theo yêu cầu nhà mạng (Ví dụ: 0905... -> 84905...)
+    if phone_number.startswith('0'):
+        phone_number = '84' + phone_number[1:]
+        
+    # Nội dung SMS Chăm sóc khách hàng bám sát nghiệp vụ đơn hàng
+    content = f"Cam on ban da mua hang tai Shoe Store. Don hang #{order_id} tri gia {int(total_price):,} VND da duoc thanh toan va khoi tao thanh cong!"
+    
+    payload = {
+        'to': phone_number,
+        'content': content,
+        'sms_type': 2,  # Loại 2: Tin nhắn Chăm sóc khách hàng (CSKH)
+        'sender': sender_name
+    }
+    
+    try:
+        # Gọi HTTP POST Request sử dụng Basic Authentication (Tài liệu API SpeedSMS)
+        response = requests.post(
+            url, 
+            json=payload, 
+            auth=(api_key, 'x'),
+            timeout=10
+        )
+        result = response.json()
+        
+        if result.get('status') == 'success':
+            logger.info(f"--> [SMS] Gửi tin nhắn thành công cho đơn hàng #{order_id}")
+            return True
+        else:
+            logger.error(f"--> [SMS] Lỗi phản hồi kết nối từ SpeedSMS: {result.get('message')}")
+            return False
+    except Exception as e:
+        logger.error(f"--> [SMS] Thất bại khi kết nối tới máy chủ Gateway SMS: {str(e)}")
+        return False
 
 
 class VNPayService:
@@ -273,7 +321,6 @@ def create_vnpay_payment(request, order_id):
     """Hàm lấy thông tin đơn hàng và tạo link dẫn sang cổng thanh toán VNPay Sandbox"""
     order = get_object_or_404(Order, id=order_id)
     
-    # Khởi tạo công cụ VNPay Service từ cài đặt hệ thống công khai
     vnpay = VNPayService(
         tmn_code=settings.VNP_TMN_CODE,
         hash_secret=settings.VNP_HASH_SECRET,
@@ -281,18 +328,15 @@ def create_vnpay_payment(request, order_id):
         return_url=settings.VNP_RETURN_URL
     )
     
-    # Lấy thông tin IP của thiết bị khách hàng đang thao tác
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     ip_address = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR', '127.0.0.1')
     
-    # Chuẩn hóa mốc thời gian đúng định dạng của VNPay: YYYYMMDDHHMMSS
     create_date = datetime.now().strftime('%Y%m%d%H%M%S')
     order_desc = f"Thanh toan don hang {order.id} tai Website Shoe Store"
     
-    # Sinh liên kết URL mã hóa bảo mật cấp cao sang Sandbox
     payment_url = vnpay.generate_payment_url(
         order_id=order.id,
-        amount=float(order.total_amount),  # Lưu ý sửa .total_amount nếu trường tổng tiền của bạn đặt tên khác
+        amount=float(order.total_price),  
         order_desc=order_desc,
         ip_address=ip_address,
         create_date=create_date
@@ -312,7 +356,6 @@ def vnpay_return(request):
         return_url=settings.VNP_RETURN_URL
     )
     
-    # Kiểm tra tính vẹn toàn của dữ liệu dựa trên Checksum mã hóa SHA512 công khai
     if vnpay.validate_response(response_data):
         order_id = response_data.get('vnp_TxnRef')
         response_code = response_data.get('vnp_ResponseCode')
@@ -320,13 +363,30 @@ def vnpay_return(request):
         try:
             order = Order.objects.get(id=order_id)
             
-            # Cờ trạng thái giao dịch '00' đại diện cho việc chuyển tiền thành công rực rỡ
             if response_code == '00':
-                order.status = 'Paid'  # Cập nhật cờ thanh toán thành công
+                order.status = 'Completed'  # Cập nhật cờ thanh toán thành công
                 order.save()
+                
+                # ========================================================
+                # 🔥 ĐOẠN CODE "XỊN XÒ": TỰ ĐỘNG GỬI SMS THỜI GIAN THỰC
+                # ========================================================
+                # Lấy số điện thoại từ Order - an toàn tránh AttributeError
+                customer_phone = getattr(order, 'phone', None)
+                
+                if customer_phone:
+                    try:
+                        send_sms_notification(
+                            phone_number=str(customer_phone).strip(),
+                            order_id=order.id,
+                            total_price=int(order.total_price)
+                        )
+                    except Exception as sms_error:
+                        logger.error(f"Lỗi gửi SMS cho đơn #{order.id}: {str(sms_error)}")
+                # ========================================================
+                
                 return render(request, 'payment_success.html', {'order': order, 'vnpay_data': response_data})
             else:
-                order.status = 'Payment_Failed'  # Ghi nhận lỗi/khách bấm hủy đơn
+                order.status = 'Payment_Failed'  
                 order.save()
                 return render(request, 'payment_failed.html', {'order': order, 'error_code': response_code})
                 

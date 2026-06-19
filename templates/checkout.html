@@ -151,7 +151,7 @@
                     required
                   />
                 </div>
-                <div class="col-12">
+                <div class="col-12 mb-3">
                   <label
                     class="form-label fw-bold small text-uppercase text-muted"
                     id="address-label"
@@ -161,10 +161,57 @@
                     id="address-input"
                     name="address"
                     class="form-control checkout-input checkout-textarea"
-                    rows="3"
+                    rows="2"
                     placeholder="Số nhà, tên đường, phường/xã..."
                     required
                   ></textarea>
+                </div>
+
+                <div class="col-12 mb-3">
+                  <label
+                    class="form-label fw-bold small text-uppercase text-muted"
+                    >Ghi chú đơn hàng (Không bắt buộc)</label
+                  >
+                  <input
+                    type="text"
+                    name="order_note"
+                    class="form-control checkout-input"
+                    placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao 15 phút..."
+                  />
+                </div>
+
+                <div class="col-12">
+                  <div
+                    class="notification-box p-3 rounded-4 border-dashed d-flex align-items-start"
+                  >
+                    <div class="form-check form-switch m-0 pt-1">
+                      <input
+                        class="form-check-input cursor-pointer"
+                        type="checkbox"
+                        name="subscribe_notifications"
+                        id="subscribe-noti"
+                        value="true"
+                        checked
+                      />
+                    </div>
+                    <div class="ms-2">
+                      <label
+                        class="form-check-label fw-bold small text-dark d-block cursor-pointer"
+                        for="subscribe-noti"
+                      >
+                        <i class="fas fa-bell text-success me-1"></i> Đăng ký
+                        nhận trạng thái đơn hàng tự động
+                      </label>
+                      <small
+                        class="text-muted d-block mt-1"
+                        style="font-size: 0.8rem"
+                      >
+                        Hệ thống sẽ gửi cập nhật trực tiếp (Xác nhận, Đang vận
+                        chuyển, Đã giao) qua Zalo/SMS theo số điện thoại trên
+                        hoàn toàn miễn phí.
+                      </small>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -341,6 +388,18 @@
                 <strong class="fs-5">Tổng tiền:</strong>
                 <strong class="fs-4 text-danger"
                   ><span id="selected-total">0</span>₫</strong
+                >
+              </div>
+              <div
+                class="summary-row mb-3 d-none"
+                id="notification-summary-row"
+              >
+                <span class="text-muted"
+                  ><i class="fas fa-check-circle text-success me-1"></i> Thông
+                  báo</span
+                >
+                <small class="badge bg-success-subtle text-success fw-bold p-2"
+                  >Đã đăng ký SMS/Zalo</small
                 >
               </div>
               <div class="summary-note mb-3">
@@ -581,7 +640,7 @@
   }
 
   .checkout-textarea {
-    min-height: 7.5rem;
+    min-height: 5rem;
   }
 
   .cursor-pointer {
@@ -618,7 +677,6 @@
     color: #0d6efd;
   }
 
-  /* Style mới cho logo VNPay */
   .payment-icon-vnpay {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -691,6 +749,30 @@
     letter-spacing: 0.02em;
   }
 
+  /* Style cho tính năng hộp thông báo mới */
+  .border-dashed {
+    border: 2px dashed #e2e8f0 !important;
+  }
+  .notification-box {
+    background-color: #f8fafc;
+    transition: all 0.3s ease;
+  }
+  .notification-box:has(.form-check-input:checked) {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0 !important;
+  }
+  .form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+  }
+  .form-switch .form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+  }
+  .bg-success-subtle {
+    background-color: #d1e7dd;
+  }
+
   @media (max-width: 991.98px) {
     .checkout-hero {
       flex-direction: column;
@@ -736,8 +818,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  const baseOrderCreateUrl = "{% url 'orders:order_create' %}";
-
   function formatMoney(value) {
     return new Intl.NumberFormat("vi-VN").format(
       Math.max(0, Math.round(value || 0)),
@@ -785,7 +865,20 @@
     addressLabel.textContent = "Địa chỉ giao hàng";
   }
 
-  // Hàm chọn phương thức thanh toán lớn (Đã chỉnh sửa đồng bộ cho cả vnpay)
+  // Cập nhật hiển thị tóm tắt đăng ký thông báo tại Tóm tắt đơn hàng
+  function updateNotificationSummary() {
+    const notiCheckbox = document.getElementById("subscribe-noti");
+    const summaryRow = document.getElementById("notification-summary-row");
+    if (notiCheckbox && summaryRow) {
+      if (notiCheckbox.checked) {
+        summaryRow.classList.remove("d-none");
+      } else {
+        summaryRow.classList.add("d-none");
+      }
+    }
+  }
+
+  // Hàm chọn phương thức thanh toán lớn
   function selectPayment(id) {
     document
       .querySelectorAll(".payment-item")
@@ -812,7 +905,8 @@
 
   // Hàm chọn ngân hàng con
   function clickBank(event, element) {
-    event.stopPropagation(); // Ngăn không cho sự kiện lan ra ngoài
+    event.stopPropagation();
+    selectPayment("bank");
     document
       .querySelectorAll(".bank-card")
       .forEach((card) => card.classList.remove("active-bank"));
@@ -823,8 +917,25 @@
     checkbox.addEventListener("change", updateCheckoutSummary);
   });
 
+  document.querySelectorAll('input[name="payment_method"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.id === "bank_transfer") {
+        selectPayment("bank");
+      } else {
+        selectPayment(input.id);
+      }
+    });
+  });
+
+  // Gắn sự kiện thay đổi cho nút switch thông báo để cập nhật giao diện thời gian thực
+  document
+    .getElementById("subscribe-noti")
+    .addEventListener("change", updateNotificationSummary);
+
+  // Khởi chạy ban đầu
   updateCheckoutSummary();
   syncAddressFieldByPayment();
+  updateNotificationSummary();
 
   document.getElementById("btn-confirm").addEventListener("click", function () {
     const form = document.getElementById("checkout-form");
@@ -836,6 +947,9 @@
     const phone = document.querySelector('input[name="phone"]').value.trim();
     const address = document
       .querySelector('textarea[name="address"]')
+      .value.trim();
+    const orderNote = document
+      .querySelector('input[name="order_note"]')
       .value.trim();
     const paymentMethod = document.querySelector(
       'input[name="payment_method"]:checked',
@@ -873,6 +987,11 @@
       errors.push("Địa chỉ không được vượt quá 1000 ký tự");
     }
 
+    // Validate Ghi chú đơn hàng (Bảo vệ dữ liệu không vượt quá giới hạn database)
+    if (orderNote.length > 500) {
+      errors.push("Ghi chú đơn hàng không được vượt quá 500 ký tự");
+    }
+
     // Show errors if any
     if (errors.length > 0) {
       showCheckoutErrors(errors);
@@ -898,7 +1017,7 @@
   });
 
   function showCheckoutErrors(errors) {
-    let errorHtml = '<ul class="mb-0">';
+    let errorHtml = '<ul class="mb-0 text-start">';
     errors.forEach((error) => {
       errorHtml += `<li>${error}</li>`;
     });

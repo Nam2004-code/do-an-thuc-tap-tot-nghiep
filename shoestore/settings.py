@@ -307,3 +307,6 @@ VNP_TMN_CODE = "2QTYXRT3"  # Mã website thử nghiệm được cấp bởi VNP
 VNP_HASH_SECRET = "9CNEP66Z14MRMT0W7Z701XJ9U5F63Q8H"  # Chuỗi bí mật để tạo mã băm bảo mật (Checksum)
 VNP_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"  # Đường dẫn sang cổng VNPay
 VNP_RETURN_URL = "http://127.0.0.1:8000/order/vnpay-return/"  # Link VNPay sẽ trả kết quả về sau khi thanh toán xong
+# Cấu hình dịch vụ gửi SMS (SpeedSMS làm ví dụ)
+SPEEDSMS_API_KEY = "MÃ_API_KEY_CỦA_BẠN_TRÊN_SPEEDSMS"
+SPEEDSMS_SENDER = "BrandsName_Hoac_NhaMang" # Ví dụ: "SpeedSMS" hoặc "CSKH"
